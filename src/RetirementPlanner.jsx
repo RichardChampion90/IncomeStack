@@ -285,3 +285,139 @@ export default function RetirementPlanner() {
                   <Tooltip formatter={(v) => fmt(v)} labelFormatter={(age) => `Age ${age}`}
                     contentStyle={{ background: "#fff", border: "1px solid #DEDACD" }} />
                   <ReferenceLine x={65} stroke="#B08D57" strokeDasharray="4 2" label={{ value: "65", position: "top", fontSize: 11, fill: "#B08D57" }} />
+                  <ReferenceLine x={statePensionAge} stroke="#6B7A56" strokeDasharray="4 2" label={{ value: "SPA", position: "top", fontSize: 11, fill: "#6B7A56" }} />
+                  <Line type="monotone" dataKey="net" stroke="#3F4A34" strokeWidth={2.5} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </Section>
+
+            <Section title="Where the money comes from, year by year">
+              <div style={styles.tableWrap}>
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>Age</th><th style={styles.th}>Year</th>
+                      <th style={styles.th}>Salary</th><th style={styles.th}>AFPS/EDP</th>
+                      <th style={styles.th}>2nd pension</th><th style={styles.th}>ISA</th>
+                      <th style={styles.th}>State pension</th><th style={styles.th}>Tax</th>
+                      <th style={{ ...styles.th, color: "#3F4A34" }}>Net</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selected.rows.map((r) => (
+                      <tr key={r.age}>
+                        <td style={styles.td}>{r.age}</td>
+                        <td style={styles.td}>{r.year}</td>
+                        <td style={styles.td}>{r.salaryIncome ? fmt(r.salaryIncome) : "—"}</td>
+                        <td style={styles.td}>{r.afpsInc ? fmt(r.afpsInc) : "—"}</td>
+                        <td style={styles.td}>{r.dcIncome ? fmt(r.dcIncome) : "—"}</td>
+                        <td style={styles.td}>{r.isaIncome ? fmt(r.isaIncome) : "—"}</td>
+                        <td style={styles.td}>{r.spIncome ? fmt(r.spIncome) : "—"}</td>
+                        <td style={styles.td}>{r.tax ? fmt(r.tax) : "—"}</td>
+                        <td style={{ ...styles.td, fontWeight: 600, color: "#3F4A34" }}>{fmt(r.net)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Section>
+
+            <Section title="Retiring from the 2nd job at 55 vs each year after">
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={retireComparison}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#DEDACD" />
+                  <XAxis dataKey="retireAge" stroke="#6B6558" fontSize={12} />
+                  <YAxis stroke="#6B6558" fontSize={12} tickFormatter={(v) => `£${Math.round(v / 1000)}k`} />
+                  <Tooltip formatter={(v) => fmt(v)} labelFormatter={(age) => `Retire at ${age}`}
+                    contentStyle={{ background: "#fff", border: "1px solid #DEDACD" }} />
+                  <Bar dataKey="netFirstYear" fill="#B08D57" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </Section>
+
+            <div style={styles.disclaimer}>
+              Milestone AFPS/EDP figures are taken directly from your AFPC
+              report and held flat between milestones (today's money, no
+              further CPI modelled). The "early access" reduced figures use
+              the report's own actuarial-reduction table; ages 65–67 add your
+              AFPS05 element (normal, unreduced from 65) to the AFPS15
+              reduced element, since only the AFPS15 portion is still "early"
+              by then. The separate deferred lump sum payable at an early
+              access age is not included in the income totals above — check
+              your report for that figure. 2026/27 tax bands only, no
+              National Insurance, no personal allowance taper. This is a
+              planning sketch, not financial advice — confirm real numbers
+              with Veterans UK / an independent financial adviser before
+              deciding anything, especially the deferred-choice remedy option.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Section({ title, children }) {
+  return (
+    <div style={styles.section}>
+      <div style={styles.sectionTitle}>{title}</div>
+      {children}
+    </div>
+  );
+}
+
+function Field({ label, value, setValue, min, max, step = 1, prefix = "", suffix = "" }) {
+  return (
+    <div style={styles.fieldRow}>
+      <label style={styles.fieldLabel}>{label}</label>
+      <div style={styles.fieldInputWrap}>
+        {prefix && <span style={styles.affix}>{prefix}</span>}
+        <input type="number" value={value} min={min} max={max} step={step}
+          onChange={(e) => setValue(Number(e.target.value))} style={styles.fieldInput} />
+        {suffix && <span style={styles.affix}>{suffix}</span>}
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value }) {
+  return (
+    <div style={styles.statCard}>
+      <div style={styles.statLabel}>{label}</div>
+      <div style={styles.statValue}>{value}</div>
+    </div>
+  );
+}
+
+const styles = {
+  page: { minHeight: "100vh", background: "#F4F1E9", color: "#232821",
+    fontFamily: "ui-sans-serif, -apple-system, 'Segoe UI', Inter, system-ui, sans-serif",
+    padding: "32px 16px 64px" },
+  container: { maxWidth: 1080, margin: "0 auto" },
+  header: { marginBottom: 28 },
+  eyebrow: { fontSize: 11, letterSpacing: "0.14em", color: "#8A8371", fontWeight: 700, marginBottom: 8 },
+  h1: { fontSize: 32, lineHeight: 1.15, margin: "0 0 10px", fontWeight: 700, color: "#232821", letterSpacing: "-0.01em" },
+  subhead: { fontSize: 15, color: "#5B5648", maxWidth: 640, lineHeight: 1.5 },
+  grid: { display: "grid", gridTemplateColumns: "320px 1fr", gap: 24, alignItems: "start" },
+  panel: { background: "#FBFAF6", border: "1px solid #E4E0D3", borderRadius: 10, padding: "18px 18px 8px", position: "sticky", top: 16 },
+  results: { display: "flex", flexDirection: "column", gap: 20 },
+  section: { marginBottom: 18 },
+  sectionTitle: { fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#6B7A56", marginBottom: 10 },
+  fieldRow: { marginBottom: 12 },
+  fieldLabel: { display: "block", fontSize: 12.5, color: "#4A4638", marginBottom: 4 },
+  fieldInputWrap: { display: "flex", alignItems: "center", border: "1px solid #DEDACD", borderRadius: 6, background: "#fff", padding: "6px 10px" },
+  affix: { fontSize: 13, color: "#8A8371" },
+  fieldInput: { border: "none", outline: "none", fontSize: 14, width: "100%", padding: "2px 6px", fontVariantNumeric: "tabular-nums", background: "transparent", color: "#232821" },
+  select: { width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #DEDACD", background: "#fff", fontSize: 13, color: "#232821" },
+  note: { fontSize: 12.5, color: "#7A7462", lineHeight: 1.5, marginTop: 6 },
+  cardsRow: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 },
+  statCard: { background: "#3F4A34", borderRadius: 10, padding: "16px 16px", color: "#F4F1E9" },
+  statLabel: { fontSize: 11.5, opacity: 0.75, marginBottom: 6 },
+  statValue: { fontSize: 21, fontWeight: 700, fontVariantNumeric: "tabular-nums" },
+  slider: { width: "100%", accentColor: "#3F4A34" },
+  sliderLabel: { fontSize: 13, color: "#4A4638", marginTop: 8, lineHeight: 1.5 },
+  tableWrap: { overflowX: "auto", border: "1px solid #E4E0D3", borderRadius: 8, background: "#fff" },
+  table: { borderCollapse: "collapse", width: "100%", fontSize: 12.5 },
+  th: { textAlign: "right", padding: "8px 10px", borderBottom: "1px solid #E4E0D3", color: "#6B6558", fontWeight: 600, whiteSpace: "nowrap" },
+  td: { textAlign: "right", padding: "6px 10px", borderBottom: "1px solid #F0EDE3", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" },
+  disclaimer: { fontSize: 11.5, color: "#8A8371", lineHeight: 1.6, borderTop: "1px solid #E4E0D3", paddingTop: 14 }, };
