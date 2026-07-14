@@ -37,7 +37,7 @@ const CURRENT_YEAR = 2026;
 // ---------- Real AFPC milestone data, from the user's report ---------- const SCENARIOS = {
   A: {
     label: "Remedy: legacy scheme until 1 Apr 2022",
-    exitAge; 40,
+    exitAge: 40,
     edpAtExit: 9482,
     lumpSumAtExit: 59054,
     edpAt55: 12471,
