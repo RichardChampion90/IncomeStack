@@ -11,7 +11,9 @@ import React, { useMemo, useState } from "react"; import {
   ReferenceLine,
 } from "recharts";
 
-// ---------- UK 2026/27 tax assumptions (simplified) ---------- const PERSONAL_ALLOWANCE = 12570; const BASIC_LIMIT = 50270; const HIGHER_LIMIT = 125140;
+const PERSONAL_ALLOWANCE = 12570;
+const BASIC_LIMIT = 50270;
+const HIGHER_LIMIT = 125140;
 
 function incomeTax(taxable) {
   if (taxable <= 0) return 0;
@@ -34,7 +36,7 @@ const fmt = (n) =>
 
 const CURRENT_YEAR = 2026;
 
-// ---------- Real AFPC milestone data, from the user's report ---------- const SCENARIOS = {
+const SCENARIOS = {
   A: {
     label: "Remedy: legacy scheme until 1 Apr 2022",
     exitAge: 40,
@@ -338,16 +340,16 @@ export default function RetirementPlanner() {
             <div style={styles.disclaimer}>
               Milestone AFPS/EDP figures are taken directly from your AFPC
               report and held flat between milestones (today's money, no
-              further CPI modelled). The "early access" reduced figures use
-              the report's own actuarial-reduction table; ages 65–67 add your
-              AFPS05 element (normal, unreduced from 65) to the AFPS15
-              reduced element, since only the AFPS15 portion is still "early"
+              further CPI modelled). The early access reduced figures use
+              the report's own actuarial-reduction table; ages 65 to 67 add
+              your AFPS05 element (normal, unreduced from 65) to the AFPS15
+              reduced element, since only the AFPS15 portion is still early
               by then. The separate deferred lump sum payable at an early
-              access age is not included in the income totals above — check
+              access age is not included in the income totals above, check
               your report for that figure. 2026/27 tax bands only, no
               National Insurance, no personal allowance taper. This is a
-              planning sketch, not financial advice — confirm real numbers
-              with Veterans UK / an independent financial adviser before
+              planning sketch, not financial advice, confirm real numbers
+              with Veterans UK or an independent financial adviser before
               deciding anything, especially the deferred-choice remedy option.
             </div>
           </div>
