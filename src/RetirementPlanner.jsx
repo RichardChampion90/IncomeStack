@@ -10,6 +10,10 @@ import React, { useMemo, useState } from "react"; import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
+import * as pdfjsLib from "pdfjs-dist";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://gbr01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fcdnjs.cloudflare.com%2Fajax%2Flibs%2Fpdf.js%2F4.0.379%2Fpdf.worker.min.js&data=05%7C02%7Crichard.champion609%40mod.gov.uk%7C1eb8ccbc9bf441c066d608dee37bf781%7Cbe7760ed5953484bae95d0a16dfa09e5%7C0%7C0%7C639198318746294847%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=ijN9uDncbz93%2F7Vc5bWEZWKkV0PpL4MPuK3oC6ZTLOg%3D&reserved=0";
 
 const PERSONAL_ALLOWANCE = 12570;
 const BASIC_LIMIT = 50270;
@@ -34,67 +38,93 @@ function incomeTax(taxable) {
 const fmt = (n) =>
   "£" + Math.round(n).toLocaleString("en-GB", { maximumFractionDigits: 0 });
 
-const CURRENT_YEAR = 2026;
+const CURRENT_YEAR = new Date().getFullYear();
 
-const SCENARIOS = {
-  A: {
-    label: "Remedy: legacy scheme until 1 Apr 2022",
-    exitAge: 40,
-    edpAtExit: 9482,
-    lumpSumAtExit: 59054,
-    edpAt55: 12471,
-    deferredAt65: 15460,
-    afps05NormalAt65: 11957,
-    deferredAtSPA: 22261,
-    earlyTotal: {
-      55: 12274, 56: 12840, 57: 13462, 58: 14112, 59: 14820,
-      60: 15555, 61: 16403, 62: 17280, 63: 18270, 64: 19316,
-    },
-    earlyAfps15Only: { 65: 8547, 66: 9078, 67: 9655 },
-  },
-  B: {
-    label: "Remedy: legacy scheme until 1 Apr 2015",
-    exitAge: 40,
-    edpAtExit: 9027,
-    lumpSumAtExit: 57900,
-    edpAt55: 10514,
-    deferredAt65: 12001,
-    afps05NormalAt65: 5948,
-    deferredAtSPA: 23750,
-    earlyTotal: {
-      55: 12401, 56: 12972, 57: 13601, 58: 14258, 59: 14972,
-      60: 15715, 61: 16572, 62: 17458, 63: 18458, 64: 19515,
-    },
-    earlyAfps15Only: { 65: 14767, 66: 15684, 67: 16682 },
-  },
+const EXAMPLE = {
+  exitAge: 40,
+  edpAtExit: 9482,
+  lumpSumAtExit: 59054,
+  edpAt55: 12471,
+  deferredAt65: 15460,
+  deferredAtSPA: 22261,
 };
 
-function afpsIncome(age, s, earlyAccessAge) {
-  if (age < s.exitAge) return 0;
-  if (age < 55) return s.edpAtExit;
-  if (earlyAccessAge >= 68) {
-    if (age < 65) return s.edpAt55;
-    if (age < 68) return s.deferredAt65;
-    return s.deferredAtSPA;
+const BLANK = {
+  exitAge: 40,
+  edpAtExit: 0,
+  lumpSumAtExit: 0,
+  edpAt55: 0,
+  deferredAt65: 0,
+  deferredAtSPA: 0,
+};
+
+async function extractPdfText(file) {
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let text = "";
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map((it) => it.str).join(" ") + "\n";
   }
-  if (earlyAccessAge < 65) {
-    if (age < earlyAccessAge) return s.edpAt55;
-    const locked = Math.min(Math.max(earlyAccessAge, 55), 64);
-    return s.earlyTotal[locked];
+  return text;
+}
+
+function parseAfpc(text) {
+  const num = (re) => {
+    const m = text.match(re);
+    return m ? parseInt(m[1].replace(/,/g, ""), 10) : null;
+  };
+  const dobMatch = text.match(/Date of Birth\s+(\d{2})\/(\d{2})\/(\d{4})/i);
+  let currentAge = null;
+  if (dobMatch) {
+    const dob = new Date(
+      parseInt(dobMatch[3], 10),
+      parseInt(dobMatch[2], 10) - 1,
+      parseInt(dobMatch[1], 10)
+    );
+    const now = new Date();
+    currentAge = Math.floor((now - dob) / (365.25 * 24 * 3600 * 1000));
   }
-  if (age < 65) return s.edpAt55;
-  if (age < earlyAccessAge) return s.deferredAt65;
-  const locked = Math.min(Math.max(earlyAccessAge, 65), 67);
-  return s.afps05NormalAt65 + s.earlyAfps15Only[locked]; }
+  return {
+    edpAtExit: num(/Pension\/EDP at Exit\s+([\d,]+)/i),
+    lumpSumAtExit: num(/Lump Sum at Exit\s+([\d,]+)/i),
+    edpAt55: num(/EDP at 55\s+([\d,]+)/i),
+    deferredAt65: num(/Deferred Pension at 65\s+([\d,]+)/i),
+    deferredAtSPA: num(/Deferred Pension at SPA\s+([\d,]+)/i),
+    statePensionAge: num(/State Pension Age \(SPA\)\s+(\d+)/i),
+    exitAge: num(/Age at the end Reckonable Service\s+(\d+)/i),
+    currentAge,
+  };
+}
+
+function afpsIncome(age, afps, spa, accessAge, reductionPerYear) {
+  if (age < afps.exitAge) return 0;
+  if (age < 55) return afps.edpAtExit;
+  if (accessAge >= spa) {
+    if (age < 65) return afps.edpAt55;
+    if (age < spa) return afps.deferredAt65;
+    return afps.deferredAtSPA;
+  }
+  if (age < accessAge) {
+    if (age < 65) return afps.edpAt55;
+    return afps.deferredAt65;
+  }
+  const yearsEarly = Math.max(spa - accessAge, 0);
+  const reduced = afps.deferredAtSPA * (1 - (reductionPerYear / 100) * yearsEarly);
+  return Math.max(reduced, 0);
+}
 
 export default function RetirementPlanner() {
-  const [scenarioKey, setScenarioKey] = useState("A");
-  const scenario = SCENARIOS[scenarioKey];
+  const [afps, setAfps] = useState(EXAMPLE);
+  const [pdfStatus, setPdfStatus] = useState(null);
 
   const [currentAge, setCurrentAge] = useState(35);
-  const yearsToExit = scenario.exitAge - currentAge;
+  const exitAge = afps.exitAge;
+  const exitYear = CURRENT_YEAR + (exitAge - currentAge);
 
-  const [afpsAccessAge, setAfpsAccessAge] = useState(68);
+  const [accessAge, setAccessAge] = useState(68);
+  const [reductionPerYear, setReductionPerYear] = useState(4);
 
   const [salary, setSalary] = useState(60000);
   const [employeePct, setEmployeePct] = useState(8);
@@ -110,8 +140,32 @@ export default function RetirementPlanner() {
 
   const [retireAge, setRetireAge] = useState(55);
 
-  const exitAge = scenario.exitAge;
-  const exitYear = CURRENT_YEAR + yearsToExit;
+  const [useNominal, setUseNominal] = useState(false);
+  const [cpiRate, setCpiRate] = useState(2.5);
+
+  async function handlePdfUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setPdfStatus("reading");
+    try {
+      const text = await extractPdfText(file);
+      const parsed = parseAfpc(text);
+      setAfps((prev) => ({
+        exitAge: parsed.exitAge ?? prev.exitAge,
+        edpAtExit: parsed.edpAtExit ?? prev.edpAtExit,
+        lumpSumAtExit: parsed.lumpSumAtExit ?? prev.lumpSumAtExit,
+        edpAt55: parsed.edpAt55 ?? prev.edpAt55,
+        deferredAt65: parsed.deferredAt65 ?? prev.deferredAt65,
+        deferredAtSPA: parsed.deferredAtSPA ?? prev.deferredAtSPA,
+      }));
+      if (parsed.statePensionAge) setStatePensionAge(parsed.statePensionAge);
+      if (parsed.currentAge) setCurrentAge(parsed.currentAge);
+      const found = Object.values(parsed).filter((v) => v !== null).length;
+      setPdfStatus(found >= 5 ? "ok" : "partial");
+    } catch (err) {
+      setPdfStatus("error");
+    }
+  }
 
   function projectPots(targetRetireAge) {
     let dcPot = 0;
@@ -127,18 +181,22 @@ export default function RetirementPlanner() {
     return { dcPot, isaPot };
   }
 
-  function buildTimeline(targetRetireAge, accessAge) {
+  function buildTimeline(targetRetireAge, chosenAccessAge) {
     const { dcPot, isaPot } = projectPots(targetRetireAge);
     const dcAnnual = dcPot * (drawdownRate / 100);
     const isaAnnual = isaPot * (drawdownRate / 100);
     const rows = [];
     for (let age = exitAge; age <= 85; age++) {
+      const infl = useNominal
+        ? Math.pow(1 + cpiRate / 100, Math.max(age - currentAge, 0))
+        : 1;
       const working = age < targetRetireAge;
-      const salaryIncome = working ? salary : 0;
-      const afpsInc = afpsIncome(age, scenario, accessAge);
-      const dcIncome = age >= targetRetireAge ? dcAnnual : 0;
-      const isaIncome = age >= targetRetireAge ? isaAnnual : 0;
-      const spIncome = age >= statePensionAge ? statePension : 0;
+      const salaryIncome = (working ? salary : 0) * infl;
+      const afpsInc =
+        afpsIncome(age, afps, statePensionAge, chosenAccessAge, reductionPerYear) * infl;
+      const dcIncome = (age >= targetRetireAge ? dcAnnual : 0) * infl;
+      const isaIncome = (age >= targetRetireAge ? isaAnnual : 0) * infl;
+      const spIncome = (age >= statePensionAge ? statePension : 0) * infl;
       const taxable = salaryIncome + afpsInc + dcIncome + spIncome;
       const tax = incomeTax(taxable);
       const net = taxable - tax + isaIncome;
@@ -153,120 +211,163 @@ export default function RetirementPlanner() {
   }
 
   const selected = useMemo(
-    () => buildTimeline(retireAge, afpsAccessAge),
-    [scenarioKey, currentAge, salary, employeePct, employerPct, pensionGrowth,
+    () => buildTimeline(retireAge, accessAge),
+    [afps, currentAge, salary, employeePct, employerPct, pensionGrowth,
       isaMonthly, isaGrowth, drawdownRate, statePension, statePensionAge,
-      retireAge, afpsAccessAge]
+      retireAge, accessAge, reductionPerYear, useNominal, cpiRate]
   );
 
   const retireComparison = useMemo(() => {
     const out = [];
     for (let ra = 55; ra <= 67; ra++) {
-      const { rows } = buildTimeline(ra, afpsAccessAge);
+      const { rows } = buildTimeline(ra, accessAge);
       const row = rows.find((r) => r.age === ra) || rows[0];
       out.push({ retireAge: ra, netFirstYear: row ? row.net : 0 });
     }
     return out;
-  }, [scenarioKey, currentAge, salary, employeePct, employerPct, pensionGrowth,
-      isaMonthly, isaGrowth, drawdownRate, statePension, statePensionAge, afpsAccessAge]);
+  }, [afps, currentAge, salary, employeePct, employerPct, pensionGrowth,
+      isaMonthly, isaGrowth, drawdownRate, statePension, statePensionAge,
+      accessAge, reductionPerYear, useNominal, cpiRate]);
 
-  const afpsAccessComparison = useMemo(() => {
+  const accessComparison = useMemo(() => {
     const out = [];
-    for (let aa = 55; aa <= 68; aa++) {
+    for (let aa = 55; aa <= statePensionAge; aa++) {
       let total = 0;
       for (let age = exitAge; age <= 85; age++) {
-        total += afpsIncome(age, scenario, aa);
+        total += afpsIncome(age, afps, statePensionAge, aa, reductionPerYear);
       }
       out.push({ accessAge: aa, lifetimeAfps: total });
     }
     return out;
-  }, [scenarioKey]);
+  }, [afps, statePensionAge, reductionPerYear]);
 
   return (
     <div style={styles.page}>
       <div style={styles.container}>
         <header style={styles.header}>
-          <div style={styles.eyebrow}>BUILT FROM YOUR REAL AFPC REPORT</div>
+          <div style={styles.eyebrow}>YOUR NUMBERS, YOUR REPORT</div>
           <h1 style={styles.h1}>Your exit, mapped in numbers</h1>
           <p style={styles.subhead}>
-            Figures below come from your Armed Forces Pension Calculator
-            output (Ref: E8A03CC3), combined with a second pension and ISA.
-            Today's money throughout — no inflation modelled. Not financial
-            advice.
+            Upload your Armed Forces Pension Calculator PDF to auto-fill your
+            figures, or type them in yourself. Combined with a second pension
+            and ISA into one after-tax timeline. Not financial advice.
           </p>
         </header>
 
         <div style={styles.grid}>
           <div style={styles.panel}>
-            <Section title="Which remedy choice?">
-              <select
-                value={scenarioKey}
-                onChange={(e) => setScenarioKey(e.target.value)}
-                style={styles.select}
-              >
-                <option value="A">{SCENARIOS.A.label}</option>
-                <option value="B">{SCENARIOS.B.label}</option>
-              </select>
+            <Section title="Upload your AFPC report">
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={handlePdfUpload}
+                style={styles.fileInput}
+              />
+              {pdfStatus === "reading" && <p style={styles.note}>Reading your PDF…</p>}
+              {pdfStatus === "ok" && (
+                <p style={styles.note}>
+                  Figures filled in below — check them against your report before relying on them.
+                </p>
+              )}
+              {pdfStatus === "partial" && (
+                <p style={styles.note}>
+                  Filled in what we could find — some fields may need a manual check or entry below.
+                </p>
+              )}
+              {pdfStatus === "error" && (
+                <p style={styles.note}>
+                  Couldn't read that file — try entering your figures manually below.
+                </p>
+              )}
               <p style={styles.note}>
-                Option A pays more sooner (higher pension at 65). Option B
-                pays less until SPA but overtakes at {statePensionAge} (
-                {fmt(SCENARIOS.B.deferredAtSPA)} vs {fmt(SCENARIOS.A.deferredAtSPA)}
-                /yr). This is your "deferred choice" at discharge.
+                If your report shows two remedy options (2015 vs 2022 choice),
+                we fill in the first one found — check the figures match the
+                option you want.
               </p>
             </Section>
 
+            <Section title="Your AFPS / EDP figures">
+              <Field label="Age you leave" value={afps.exitAge}
+                setValue={(v) => setAfps({ ...afps, exitAge: v })} min={30} max={60} />
+              <Field label="EDP income at exit" value={afps.edpAtExit}
+                setValue={(v) => setAfps({ ...afps, edpAtExit: v })} min={0} max={100000} step={100} prefix="£" />
+              <Field label="Lump sum at exit" value={afps.lumpSumAtExit}
+                setValue={(v) => setAfps({ ...afps, lumpSumAtExit: v })} min={0} max={200000} step={500} prefix="£" />
+              <Field label="EDP income at 55" value={afps.edpAt55}
+                setValue={(v) => setAfps({ ...afps, edpAt55: v })} min={0} max={100000} step={100} prefix="£" />
+              <Field label="Deferred pension at 65" value={afps.deferredAt65}
+                setValue={(v) => setAfps({ ...afps, deferredAt65: v })} min={0} max={100000} step={100} prefix="£" />
+              <Field label="Full pension at SPA" value={afps.deferredAtSPA}
+                setValue={(v) => setAfps({ ...afps, deferredAtSPA: v })} min={0} max={100000} step={100} prefix="£" />
+              <button style={styles.smallBtn} onClick={() => setAfps(BLANK)}>Clear and enter my own</button>
+              <button style={{ ...styles.smallBtn, marginLeft: 8 }} onClick={() => setAfps(EXAMPLE)}>Load example data</button>
+            </Section>
+
             <Section title="Your service">
-              <Field label="Current age" value={currentAge} setValue={setCurrentAge} min={30} max={45} />
-              <p style={styles.note}>
-                Leaving at {exitAge} ({exitYear}), {yearsToExit} years from now.
-              </p>
+              <Field label="Current age" value={currentAge} setValue={setCurrentAge} min={20} max={60} />
+              <p style={styles.note}>Leaving at {exitAge} ({exitYear}).</p>
             </Section>
 
             <Section title="Second career">
               <Field label="Salary" value={salary} setValue={setSalary} min={0} max={200000} step={1000} prefix="£" />
               <Field label="Your pension contribution %" value={employeePct} setValue={setEmployeePct} min={0} max={40} suffix="%" />
               <Field label="Employer match %" value={employerPct} setValue={setEmployerPct} min={0} max={40} suffix="%" />
-              <Field label="Pension growth (annual)" value={pensionGrowth} setValue={setPensionGrowth} min={0} max={12} suffix="%" step={0.5} />
+              <Field label="Pension growth (annual, real)" value={pensionGrowth} setValue={setPensionGrowth} min={0} max={12} suffix="%" step={0.5} />
             </Section>
 
             <Section title="Stocks & shares ISA">
               <Field label="Monthly contribution" value={isaMonthly} setValue={setIsaMonthly} min={0} max={5000} step={50} prefix="£" />
-              <Field label="Growth (annual)" value={isaGrowth} setValue={setIsaGrowth} min={0} max={12} suffix="%" step={0.5} />
+              <Field label="Growth (annual, real)" value={isaGrowth} setValue={setIsaGrowth} min={0} max={12} suffix="%" step={0.5} />
             </Section>
 
             <Section title="At retirement">
               <Field label="Drawdown rate (2nd pension + ISA)" value={drawdownRate} setValue={setDrawdownRate} min={2} max={8} suffix="%" step={0.5} />
               <Field label="State pension (annual)" value={statePension} setValue={setStatePension} min={0} max={20000} step={100} prefix="£" />
               <Field label="State pension age" value={statePensionAge} setValue={setStatePensionAge} min={60} max={70} />
+              <Field label="Early-access reduction (per year early)" value={reductionPerYear} setValue={setReductionPerYear} min={1} max={8} suffix="%" step={0.5} />
+            </Section>
+
+            <Section title="Inflation">
+              <label style={styles.checkboxRow}>
+                <input type="checkbox" checked={useNominal} onChange={(e) => setUseNominal(e.target.checked)} />
+                Show future (nominal) pounds, not today's money
+              </label>
+              {useNominal && (
+                <Field label="Assumed CPI (annual)" value={cpiRate} setValue={setCpiRate} min={0} max={8} suffix="%" step={0.1} />
+              )}
+              <p style={styles.note}>
+                {useNominal
+                  ? "Figures now show the actual pounds landing in your account each year. Tax bands stay fixed at today's levels, so this also shows the effect of fiscal drag over time."
+                  : "Figures are in today's money throughout — easier to compare, but not what you'll actually see arrive in your account decades from now."}
+              </p>
             </Section>
           </div>
 
           <div style={styles.results}>
             <div style={styles.cardsRow}>
-              <StatCard label="EDP lump sum at exit (tax‑free)" value={fmt(scenario.lumpSumAtExit)} />
-              <StatCard label="EDP income at exit (age 40)" value={fmt(scenario.edpAtExit)} />
-              <StatCard label="Full pension at SPA (68)" value={fmt(scenario.deferredAtSPA)} />
+              <StatCard label="Lump sum at exit (tax-free)" value={fmt(afps.lumpSumAtExit)} />
+              <StatCard label="EDP income at exit" value={fmt(afps.edpAtExit)} />
+              <StatCard label="Full pension at SPA" value={fmt(afps.deferredAtSPA)} />
             </div>
 
             <Section title="When do you draw your AFPS pension?">
-              <input type="range" min={55} max={68} value={afpsAccessAge}
-                onChange={(e) => setAfpsAccessAge(Number(e.target.value))} style={styles.slider} />
+              <input type="range" min={55} max={statePensionAge} value={accessAge}
+                onChange={(e) => setAccessAge(Number(e.target.value))} style={styles.slider} />
               <div style={styles.sliderLabel}>
-                {afpsAccessAge === 68
-                  ? "Waiting for the standard timeline: EDP to 55, deferred pension at 65, full pension at SPA (68)."
-                  : `Drawing early at ${afpsAccessAge} with a permanent actuarial reduction — locks in roughly ${fmt(afpsIncome(afpsAccessAge, scenario, afpsAccessAge))}/yr for life from that age. There's also a separate deferred lump sum around this age (see your report) not included in the totals below.`}
+                {accessAge >= statePensionAge
+                  ? "Waiting for the standard timeline: EDP to 55, deferred pension at 65, full pension at SPA."
+                  : `Drawing early at ${accessAge} with an estimated ${reductionPerYear}%/year reduction — roughly ${fmt(afpsIncome(accessAge, afps, statePensionAge, accessAge, reductionPerYear))}/yr for life from that age. This is an approximation, not your scheme's exact actuarial factor.`}
               </div>
               <ResponsiveContainer width="100%" height={180}>
-                <BarChart data={afpsAccessComparison}>
+                <BarChart data={accessComparison}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#DEDACD" />
                   <XAxis dataKey="accessAge" stroke="#6B6558" fontSize={11} />
                   <YAxis stroke="#6B6558" fontSize={11} tickFormatter={(v) => `£${Math.round(v / 1000)}k`} />
-                  <Tooltip formatter={(v) => fmt(v)} labelFormatter={(a) => (a === 68 ? "Wait for SPA" : `Access at ${a}`)}
+                  <Tooltip formatter={(v) => fmt(v)} labelFormatter={(a) => (a >= statePensionAge ? "Wait for SPA" : `Access at ${a}`)}
                     contentStyle={{ background: "#fff", border: "1px solid #DEDACD" }} />
                   <Bar dataKey="lifetimeAfps" fill="#6B7A56" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-              <p style={styles.note}>Total AFPS income received from exit to age 85, at each access-age choice — the classic "take it early and smaller, or wait and bigger" trade-off.</p>
             </Section>
 
             <Section title="Pick a retirement age (2nd job) to explore">
@@ -278,7 +379,7 @@ export default function RetirementPlanner() {
               </div>
             </Section>
 
-            <Section title={`Net annual income by age`}>
+            <Section title="Net annual income by age">
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={selected.rows}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#DEDACD" />
@@ -338,19 +439,18 @@ export default function RetirementPlanner() {
             </Section>
 
             <div style={styles.disclaimer}>
-              Milestone AFPS/EDP figures are taken directly from your AFPC
-              report and held flat between milestones (today's money, no
-              further CPI modelled). The early access reduced figures use
-              the report's own actuarial-reduction table; ages 65 to 67 add
-              your AFPS05 element (normal, unreduced from 65) to the AFPS15
-              reduced element, since only the AFPS15 portion is still early
-              by then. The separate deferred lump sum payable at an early
-              access age is not included in the income totals above, check
-              your report for that figure. 2026/27 tax bands only, no
-              National Insurance, no personal allowance taper. This is a
-              planning sketch, not financial advice, confirm real numbers
-              with Veterans UK or an independent financial adviser before
-              deciding anything, especially the deferred-choice remedy option.
+              PDF reading happens entirely in your browser — nothing is
+              uploaded anywhere. Milestone AFPS/EDP figures are held flat
+              between the ages you enter. Early-access figures use a simple
+              estimated reduction, not your scheme's exact actuarial factor —
+              check your report or Veterans UK for the precise number before
+              relying on it. Growth rates you enter are assumed to be real
+              (above-inflation); the nominal/CPI toggle expresses the same
+              real projections in future pounds, with 2026/27 tax bands held
+              fixed to show fiscal drag. No National Insurance or personal
+              allowance taper included. This is a planning sketch, not
+              financial advice — confirm real numbers with Veterans UK or an
+              independent financial adviser before deciding anything.
             </div>
           </div>
         </div>
@@ -410,7 +510,9 @@ const styles = {
   fieldInputWrap: { display: "flex", alignItems: "center", border: "1px solid #DEDACD", borderRadius: 6, background: "#fff", padding: "6px 10px" },
   affix: { fontSize: 13, color: "#8A8371" },
   fieldInput: { border: "none", outline: "none", fontSize: 14, width: "100%", padding: "2px 6px", fontVariantNumeric: "tabular-nums", background: "transparent", color: "#232821" },
-  select: { width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #DEDACD", background: "#fff", fontSize: 13, color: "#232821" },
+  fileInput: { fontSize: 12.5, marginBottom: 6 },
+  smallBtn: { fontSize: 12, padding: "6px 10px", borderRadius: 6, border: "1px solid #DEDACD", background: "#fff", cursor: "pointer", color: "#3F4A34" },
+  checkboxRow: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#4A4638", marginBottom: 8 },
   note: { fontSize: 12.5, color: "#7A7462", lineHeight: 1.5, marginTop: 6 },
   cardsRow: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 },
   statCard: { background: "#3F4A34", borderRadius: 10, padding: "16px 16px", color: "#F4F1E9" },
