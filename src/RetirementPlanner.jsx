@@ -134,7 +134,7 @@ function afpsInflationFactor(age, exitAge, currentAge, cpiRate, useNominal) {
   return Math.pow(1 + cpiRate / 100, Math.max(age - currentAge, 0)); }
 
 export default function RetirementPlanner() {
-  const [afps, setAfps] = useState(EXAMPLE);
+  const [afps, setAfps] = useState(BLANK);
   const [pdfStatus, setPdfStatus] = useState(null);
 
   const [currentAge, setCurrentAge] = useState(35);
