@@ -13,7 +13,7 @@ import React, { useMemo, useState } from "react"; import {
 import * as pdfjsLib from "pdfjs-dist";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
-  "https://gbr01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fcdnjs.cloudflare.com%2Fajax%2Flibs%2Fpdf.js%2F4.0.379%2Fpdf.worker.min.js&data=05%7C02%7Crichard.champion609%40mod.gov.uk%7C1eb8ccbc9bf441c066d608dee37bf781%7Cbe7760ed5953484bae95d0a16dfa09e5%7C0%7C0%7C639198318746294847%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=ijN9uDncbz93%2F7Vc5bWEZWKkV0PpL4MPuK3oC6ZTLOg%3D&reserved=0";
+  "https://gbr01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fcdnjs.cloudflare.com%2Fajax%2Flibs%2Fpdf.js%2F4.0.379%2Fpdf.worker.min.js&data=05%7C02%7Crichard.champion609%40mod.gov.uk%7C1baf2771752742afabcf08dee382aea8%7Cbe7760ed5953484bae95d0a16dfa09e5%7C0%7C0%7C639198347589595223%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=7pGDfcmdSjWfhAF3lQLPuM2tURht2Fy9bQ%2BRwjOfA9M%3D&reserved=0";
 
 const PERSONAL_ALLOWANCE = 12570;
 const BASIC_LIMIT = 50270;
@@ -98,6 +98,16 @@ function parseAfpc(text) {
   };
 }
 
+function getSalaryForAge(age, periods) {
+  const sorted = [...periods].sort((a, b) => a.startAge - b.startAge);
+  let current = 0;
+  for (const p of sorted) {
+    if (age >= p.startAge) current = p.salary;
+    else break;
+  }
+  return current;
+}
+
 function afpsIncome(age, afps, spa, accessAge, reductionPerYear) {
   if (age < afps.exitAge) return 0;
   if (age < 55) return afps.edpAtExit;
@@ -111,9 +121,17 @@ function afpsIncome(age, afps, spa, accessAge, reductionPerYear) {
     return afps.deferredAt65;
   }
   const yearsEarly = Math.max(spa - accessAge, 0);
-  const reduced = afps.deferredAtSPA * (1 - (reductionPerYear / 100) * yearsEarly);
-  return Math.max(reduced, 0);
+  const reduced = Math.max(afps.deferredAtSPA * (1 - (reductionPerYear / 100) * yearsEarly), 0);
+  if (age < spa) return reduced + afps.edpAt55;
+  return reduced;
 }
+
+function afpsInflationFactor(age, exitAge, currentAge, cpiRate, useNominal) {
+  if (!useNominal) return 1;
+  if (age < 55) {
+    return Math.pow(1 + cpiRate / 100, Math.max(exitAge - currentAge, 0));
+  }
+  return Math.pow(1 + cpiRate / 100, Math.max(age - currentAge, 0)); }
 
 export default function RetirementPlanner() {
   const [afps, setAfps] = useState(EXAMPLE);
@@ -126,7 +144,21 @@ export default function RetirementPlanner() {
   const [accessAge, setAccessAge] = useState(68);
   const [reductionPerYear, setReductionPerYear] = useState(4);
 
-  const [salary, setSalary] = useState(60000);
+  const [salaryPeriods, setSalaryPeriods] = useState([
+    { id: 1, startAge: 40, salary: 60000 },
+  ]);
+  function addSalaryPeriod() {
+    setSalaryPeriods((prev) => {
+      const last = prev[prev.length - 1];
+      return [...prev, { id: Date.now(), startAge: (last?.startAge ?? 40) + 5, salary: last?.salary ?? 40000 }];
+    });
+  }
+  function updateSalaryPeriod(id, key, value) {
+    setSalaryPeriods((prev) => prev.map((p) => (p.id === id ? { ...p, [key]: value } : p)));
+  }
+  function removeSalaryPeriod(id) {
+    setSalaryPeriods((prev) => (prev.length > 1 ? prev.filter((p) => p.id !== id) : prev));
+  }
   const [employeePct, setEmployeePct] = useState(8);
   const [employerPct, setEmployerPct] = useState(8);
   const [pensionGrowth, setPensionGrowth] = useState(5);
@@ -169,8 +201,9 @@ export default function RetirementPlanner() {
 
   function projectPots(targetRetireAge) {
     let dcPot = 0;
-    const annualDc = salary * ((employeePct + employerPct) / 100);
     for (let age = exitAge; age < targetRetireAge; age++) {
+      const sal = getSalaryForAge(age, salaryPeriods);
+      const annualDc = sal * ((employeePct + employerPct) / 100);
       dcPot = dcPot * (1 + pensionGrowth / 100) + annualDc;
     }
     let isaPot = 0;
@@ -190,10 +223,11 @@ export default function RetirementPlanner() {
       const infl = useNominal
         ? Math.pow(1 + cpiRate / 100, Math.max(age - currentAge, 0))
         : 1;
+      const afpsInfl = afpsInflationFactor(age, exitAge, currentAge, cpiRate, useNominal);
       const working = age < targetRetireAge;
-      const salaryIncome = (working ? salary : 0) * infl;
+      const salaryIncome = (working ? getSalaryForAge(age, salaryPeriods) : 0) * infl;
       const afpsInc =
-        afpsIncome(age, afps, statePensionAge, chosenAccessAge, reductionPerYear) * infl;
+        afpsIncome(age, afps, statePensionAge, chosenAccessAge, reductionPerYear) * afpsInfl;
       const dcIncome = (age >= targetRetireAge ? dcAnnual : 0) * infl;
       const isaIncome = (age >= targetRetireAge ? isaAnnual : 0) * infl;
       const spIncome = (age >= statePensionAge ? statePension : 0) * infl;
@@ -212,7 +246,7 @@ export default function RetirementPlanner() {
 
   const selected = useMemo(
     () => buildTimeline(retireAge, accessAge),
-    [afps, currentAge, salary, employeePct, employerPct, pensionGrowth,
+    [afps, currentAge, salaryPeriods, employeePct, employerPct, pensionGrowth,
       isaMonthly, isaGrowth, drawdownRate, statePension, statePensionAge,
       retireAge, accessAge, reductionPerYear, useNominal, cpiRate]
   );
@@ -225,7 +259,7 @@ export default function RetirementPlanner() {
       out.push({ retireAge: ra, netFirstYear: row ? row.net : 0 });
     }
     return out;
-  }, [afps, currentAge, salary, employeePct, employerPct, pensionGrowth,
+  }, [afps, currentAge, salaryPeriods, employeePct, employerPct, pensionGrowth,
       isaMonthly, isaGrowth, drawdownRate, statePension, statePensionAge,
       accessAge, reductionPerYear, useNominal, cpiRate]);
 
@@ -308,8 +342,33 @@ export default function RetirementPlanner() {
               <p style={styles.note}>Leaving at {exitAge} ({exitYear}).</p>
             </Section>
 
-            <Section title="Second career">
-              <Field label="Salary" value={salary} setValue={setSalary} min={0} max={200000} step={1000} prefix="£" />
+            <Section title="Second career salary (changes over time)">
+              {salaryPeriods.map((p) => (
+                <div key={p.id} style={styles.salaryRow}>
+                  <div style={styles.salaryFieldSmall}>
+                    <label style={styles.fieldLabel}>From age</label>
+                    <div style={styles.fieldInputWrap}>
+                      <input type="number" value={p.startAge}
+                        onChange={(e) => updateSalaryPeriod(p.id, "startAge", Number(e.target.value))}
+                        style={styles.fieldInput} />
+                    </div>
+                  </div>
+                  <div style={styles.salaryFieldSmall}>
+                    <label style={styles.fieldLabel}>Salary</label>
+                    <div style={styles.fieldInputWrap}>
+                      <span style={styles.affix}>£</span>
+                      <input type="number" value={p.salary}
+                        onChange={(e) => updateSalaryPeriod(p.id, "salary", Number(e.target.value))}
+                        style={styles.fieldInput} />
+                    </div>
+                  </div>
+                  {salaryPeriods.length > 1 && (
+                    <button style={styles.removeBtn} onClick={() => removeSalaryPeriod(p.id)}>✕</button>
+                  )}
+                </div>
+              ))}
+              <button style={styles.smallBtn} onClick={addSalaryPeriod}>+ Add salary change</button>
+              <p style={styles.note}>E.g. £60,000 from 40, dropping to £40,000 from 55 if you expect to slow down.</p>
               <Field label="Your pension contribution %" value={employeePct} setValue={setEmployeePct} min={0} max={40} suffix="%" />
               <Field label="Employer match %" value={employerPct} setValue={setEmployerPct} min={0} max={40} suffix="%" />
               <Field label="Pension growth (annual, real)" value={pensionGrowth} setValue={setPensionGrowth} min={0} max={12} suffix="%" step={0.5} />
@@ -356,7 +415,7 @@ export default function RetirementPlanner() {
               <div style={styles.sliderLabel}>
                 {accessAge >= statePensionAge
                   ? "Waiting for the standard timeline: EDP to 55, deferred pension at 65, full pension at SPA."
-                  : `Drawing early at ${accessAge} with an estimated ${reductionPerYear}%/year reduction — roughly ${fmt(afpsIncome(accessAge, afps, statePensionAge, accessAge, reductionPerYear))}/yr for life from that age. This is an approximation, not your scheme's exact actuarial factor.`}
+                  : `Drawing early at ${accessAge}: an estimated ${reductionPerYear}%/year-reduced pension plus your continuing EDP, until SPA — then EDP drops away and you're left with the reduced pension alone. This is an approximation based on how your report's two elements (05/15) seemed to convert independently — not confirmed against official rules.`}
               </div>
               <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={accessComparison}>
@@ -440,17 +499,22 @@ export default function RetirementPlanner() {
 
             <div style={styles.disclaimer}>
               PDF reading happens entirely in your browser — nothing is
-              uploaded anywhere. Milestone AFPS/EDP figures are held flat
-              between the ages you enter. Early-access figures use a simple
-              estimated reduction, not your scheme's exact actuarial factor —
-              check your report or Veterans UK for the precise number before
-              relying on it. Growth rates you enter are assumed to be real
-              (above-inflation); the nominal/CPI toggle expresses the same
-              real projections in future pounds, with 2026/27 tax bands held
-              fixed to show fiscal drag. No National Insurance or personal
-              allowance taper included. This is a planning sketch, not
-              financial advice — confirm real numbers with Veterans UK or an
-              independent financial adviser before deciding anything.
+              uploaded anywhere. EDP is modelled as flat in cash terms from
+              exit to 55, then rising with CPI from 55 onward — matching how
+              AFPS EDP actually behaves, rather than growing continuously
+              from today. Early-access figures add an estimated reduced
+              pension on top of your continuing EDP until SPA, then drop to
+              the reduced pension alone — this reflects how your two pension
+              elements seemed to convert independently in your report, but
+              is not confirmed against official AFPS rules; check your
+              report or Veterans UK before relying on it. Growth rates you
+              enter for the second pension and ISA are assumed to be real
+              (above-inflation). 2026/27 tax bands held fixed under the
+              nominal/CPI toggle to show fiscal drag. No National Insurance
+              or personal allowance taper included. This is a planning
+              sketch, not financial advice — confirm real numbers with
+              Veterans UK or an independent financial adviser before
+              deciding anything.
             </div>
           </div>
         </div>
@@ -511,6 +575,9 @@ const styles = {
   affix: { fontSize: 13, color: "#8A8371" },
   fieldInput: { border: "none", outline: "none", fontSize: 14, width: "100%", padding: "2px 6px", fontVariantNumeric: "tabular-nums", background: "transparent", color: "#232821" },
   fileInput: { fontSize: 12.5, marginBottom: 6 },
+  salaryRow: { display: "flex", alignItems: "flex-end", gap: 8, marginBottom: 10 },
+  salaryFieldSmall: { flex: 1 },
+  removeBtn: { border: "1px solid #DEDACD", background: "#fff", borderRadius: 6, width: 32, height: 32, cursor: "pointer", color: "#8A8371" },
   smallBtn: { fontSize: 12, padding: "6px 10px", borderRadius: 6, border: "1px solid #DEDACD", background: "#fff", cursor: "pointer", color: "#3F4A34" },
   checkboxRow: { display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#4A4638", marginBottom: 8 },
   note: { fontSize: 12.5, color: "#7A7462", lineHeight: 1.5, marginTop: 6 },
@@ -525,3 +592,4 @@ const styles = {
   th: { textAlign: "right", padding: "8px 10px", borderBottom: "1px solid #E4E0D3", color: "#6B6558", fontWeight: 600, whiteSpace: "nowrap" },
   td: { textAlign: "right", padding: "6px 10px", borderBottom: "1px solid #F0EDE3", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" },
   disclaimer: { fontSize: 11.5, color: "#8A8371", lineHeight: 1.6, borderTop: "1px solid #E4E0D3", paddingTop: 14 }, };
+
