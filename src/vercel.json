@@ -1,9 +1,0 @@
-{
-  "$schema": "https://gbr01.safelinks.protection.outlook.com/?url=https%3A%2F%2Fopenapi.vercel.sh%2Fvercel.json&data=05%7C02%7Crichard.champion609%40mod.gov.uk%7Cd8888e6649634f29066108dee3cca33f%7Cbe7760ed5953484bae95d0a16dfa09e5%7C0%7C0%7C639198665224397899%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=h75%2BgfJXMn7nga3ypsattFjr50oauvZFcxOQMIeA1Gw%3D&reserved=0",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
-}
