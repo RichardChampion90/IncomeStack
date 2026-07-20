@@ -10,6 +10,7 @@ import UploadView from "./UploadView";
 
 function App() {
   const [view, setView] = useState("home");
+  const [forecastFile, setForecastFile] = useState(null);
 
   function handleGetStarted() {
     setView("upload");
@@ -21,8 +22,50 @@ function App() {
     window.scrollTo(0, 0);
   }
 
+  function handleUploadContinue(file) {
+    setForecastFile(file);
+    setView("processing");
+    window.scrollTo(0, 0);
+  }
+
   if (view === "upload") {
-    return <UploadView onBack={handleBack} />;
+    return (
+      <UploadView
+        onBack={handleBack}
+        onContinue={handleUploadContinue}
+      />
+    );
+  }
+
+  if (view === "processing") {
+    return (
+      <main className="processing-view">
+        <div className="processing-view__container">
+          <p className="processing-view__eyebrow">
+            Forecast received
+          </p>
+
+          <h1>We’ve got your pension forecast.</h1>
+
+          <p>
+            Selected file: <strong>{forecastFile?.name}</strong>
+          </p>
+
+          <p>
+            Next, we’ll build the screen that explains the key figures and
+            pension timeline.
+          </p>
+
+          <button
+            type="button"
+            className="button button--primary"
+            onClick={() => setView("upload")}
+          >
+            Back to upload
+          </button>
+        </div>
+      </main>
+    );
   }
 
   return (
