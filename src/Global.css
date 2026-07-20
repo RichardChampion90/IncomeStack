@@ -473,3 +473,169 @@ button {
   margin-top: 18px;
   font-size: 1.2rem;
 }
+.upload-view {
+  min-height: 100vh;
+  padding: 52px 24px 80px;
+  background: var(--colour-background);
+  color: var(--colour-primary);
+}
+
+.upload-view__container {
+  width: min(100%, 920px);
+  margin: 0 auto;
+}
+
+.back-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--colour-primary);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  opacity: 0.7;
+}
+
+.upload-view__content {
+  max-width: 760px;
+  margin-top: 82px;
+}
+
+.upload-view__eyebrow {
+  margin: 0 0 18px;
+  color: #68785c;
+  font-size: 0.76rem;
+  font-weight: 750;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.upload-view h1 {
+  max-width: 720px;
+  margin: 0;
+  font-size: clamp(2.7rem, 7vw, 5rem);
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.upload-view__intro {
+  max-width: 640px;
+  margin: 26px 0 0;
+  color: #686a63;
+  font-size: 1.1rem;
+  line-height: 1.65;
+}
+
+.upload-panel {
+  margin-top: 52px;
+  padding: 48px;
+  border: 1px solid var(--colour-border);
+  border-radius: 24px;
+  background: #ffffff;
+  text-align: center;
+}
+
+.upload-panel__icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 24px;
+  border-radius: 16px;
+  background: #edf0e7;
+  color: var(--colour-primary);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.upload-panel h2 {
+  margin: 0;
+  font-size: 1.55rem;
+  letter-spacing: -0.035em;
+}
+
+.upload-panel > p {
+  max-width: 520px;
+  margin: 14px auto 0;
+  color: #686a63;
+  line-height: 1.65;
+}
+
+.upload-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 160px;
+  margin-top: 28px;
+  padding: 14px 22px;
+  border-radius: 999px;
+  background: var(--colour-primary);
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.upload-button:hover {
+  opacity: 0.9;
+}
+
+.upload-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.upload-panel .upload-panel__note {
+  margin-top: 18px;
+  font-size: 0.82rem;
+  color: #85877f;
+}
+
+.upload-assurance {
+  margin-top: 34px;
+  padding: 28px 30px;
+  border-radius: 18px;
+  background: #edf0e7;
+}
+
+.upload-assurance h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  letter-spacing: -0.025em;
+}
+
+.upload-assurance p {
+  margin: 10px 0 0;
+  color: #62675b;
+  line-height: 1.6;
+}
+
+@media (max-width: 620px) {
+  .upload-view {
+    padding: 34px 20px 60px;
+  }
+
+  .upload-view__content {
+    margin-top: 58px;
+  }
+
+  .upload-panel {
+    margin-top: 40px;
+    padding: 34px 22px;
+    border-radius: 20px;
+  }
+
+  .upload-button {
+    width: 100%;
+  }
+
+  .upload-assurance {
+    padding: 24px;
+  }
+}
