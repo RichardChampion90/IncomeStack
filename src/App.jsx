@@ -1,4 +1,5 @@
-import Header from "./components/Header";
+import Header from "./Header";
+import IntroSection from "./IntroSection";
 
 function App() {
   function handleGetStarted() {
@@ -10,7 +11,7 @@ function App() {
       <Header onGetStarted={handleGetStarted} />
 
       <main>
-        {/* The main introduction section comes next. */}
+        <IntroSection onGetStarted={handleGetStarted} />
       </main>
     </>
   );
