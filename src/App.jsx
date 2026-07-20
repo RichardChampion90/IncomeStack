@@ -1,5 +1,6 @@
 import Header from "./Header";
 import IntroSection from "./IntroSection";
+import BenefitsSection from "./BenefitsSection";
 
 function App() {
   function handleGetStarted() {
@@ -12,6 +13,7 @@ function App() {
 
       <main>
         <IntroSection onGetStarted={handleGetStarted} />
+        <BenefitsSection />
       </main>
     </>
   );
