@@ -6,30 +6,23 @@ import BenefitsSection from "./BenefitsSection";
 import HowItWorksSection from "./HowItWorksSection";
 import FinalCTASection from "./FinalCTASection";
 import Footer from "./Footer";
-import WelcomeView from "./WelcomeView";
+import UploadView from "./UploadView";
 
 function App() {
   const [view, setView] = useState("home");
 
   function handleGetStarted() {
-    setView("welcome");
+    setView("upload");
+    window.scrollTo(0, 0);
   }
 
   function handleBack() {
     setView("home");
+    window.scrollTo(0, 0);
   }
 
-  function handleSelection(choice) {
-    console.log(choice);
-  }
-
-  if (view === "welcome") {
-    return (
-      <WelcomeView
-        onBack={handleBack}
-        onSelect={handleSelection}
-      />
-    );
+  if (view === "upload") {
+    return <UploadView onBack={handleBack} />;
   }
 
   return (
