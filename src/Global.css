@@ -722,3 +722,243 @@ button {
   color: #686a63;
   line-height: 1.65;
 }
+.reading-view,
+.explained-view {
+  min-height: 100vh;
+  padding: 52px 24px 80px;
+  background: var(--colour-background);
+  color: var(--colour-primary);
+}
+
+.reading-view__container,
+.explained-view__container {
+  width: min(100%, 920px);
+  margin: 0 auto;
+}
+
+.reading-view__content,
+.explained-view__content {
+  max-width: 760px;
+  margin-top: 82px;
+}
+
+.stack-mark {
+  display: grid;
+  gap: 5px;
+  width: 46px;
+  margin-bottom: 30px;
+}
+
+.stack-mark span {
+  display: block;
+  height: 11px;
+  border-radius: 4px;
+  background: var(--colour-primary);
+}
+
+.stack-mark span:nth-child(1) {
+  width: 25px;
+}
+
+.stack-mark span:nth-child(2) {
+  width: 35px;
+}
+
+.stack-mark span:nth-child(3) {
+  width: 46px;
+}
+
+.reading-view__eyebrow,
+.explained-view__eyebrow {
+  margin: 0 0 18px;
+  color: #68785c;
+  font-size: 0.76rem;
+  font-weight: 750;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.reading-view h1,
+.explained-view h1 {
+  max-width: 720px;
+  margin: 0;
+  font-size: clamp(2.7rem, 7vw, 5rem);
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.reading-view__intro,
+.explained-view__intro {
+  max-width: 640px;
+  margin: 26px 0 0;
+  color: #686a63;
+  font-size: 1.1rem;
+  line-height: 1.65;
+}
+
+.reading-card {
+  margin-top: 52px;
+  padding: 34px;
+  border: 1px solid var(--colour-border);
+  border-radius: 24px;
+  background: #ffffff;
+}
+
+.reading-card__file {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--colour-border);
+}
+
+.reading-card__file-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+  background: #edf0e7;
+  color: var(--colour-primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.reading-card__file p {
+  margin: 0 0 5px;
+  color: #85877f;
+  font-size: 0.82rem;
+}
+
+.reading-card__file strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.reading-progress {
+  display: grid;
+  gap: 4px;
+  margin-top: 24px;
+}
+
+.reading-step {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  min-height: 48px;
+  color: #999b94;
+  transition:
+    color 250ms ease,
+    opacity 250ms ease;
+}
+
+.reading-step__status {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #d8dad3;
+  border-radius: 50%;
+  font-size: 0.78rem;
+  font-weight: 800;
+  transition:
+    background 250ms ease,
+    border-color 250ms ease,
+    color 250ms ease;
+}
+
+.reading-step--active {
+  color: var(--colour-primary);
+}
+
+.reading-step--active .reading-step__status {
+  border-color: var(--colour-primary);
+  animation: readingPulse 1s ease-in-out infinite;
+}
+
+.reading-step--complete {
+  color: var(--colour-primary);
+}
+
+.reading-step--complete .reading-step__status {
+  border-color: var(--colour-primary);
+  background: var(--colour-primary);
+  color: #ffffff;
+}
+
+.reading-view__note {
+  max-width: 650px;
+  margin: 24px 0 0;
+  color: #85877f;
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.explained-placeholder {
+  margin-top: 52px;
+  padding: 38px;
+  border: 1px solid var(--colour-border);
+  border-radius: 24px;
+  background: #ffffff;
+}
+
+.explained-placeholder > p {
+  margin: 0 0 8px;
+  color: #68785c;
+  font-size: 0.76rem;
+  font-weight: 750;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.explained-placeholder strong {
+  overflow-wrap: anywhere;
+  font-size: 1.2rem;
+}
+
+.explained-placeholder__message {
+  margin-top: 28px;
+  padding: 24px;
+  border-radius: 16px;
+  background: #edf0e7;
+  color: #62675b;
+  line-height: 1.65;
+}
+
+@keyframes readingPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(50, 68, 44, 0.12);
+  }
+
+  50% {
+    box-shadow: 0 0 0 7px rgba(50, 68, 44, 0);
+  }
+}
+
+@media (max-width: 620px) {
+  .reading-view,
+  .explained-view {
+    padding: 34px 20px 60px;
+  }
+
+  .reading-view__content,
+  .explained-view__content {
+    margin-top: 58px;
+  }
+
+  .reading-card,
+  .explained-placeholder {
+    margin-top: 40px;
+    padding: 26px 22px;
+    border-radius: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reading-step--active .reading-step__status {
+    animation: none;
+  }
+}
