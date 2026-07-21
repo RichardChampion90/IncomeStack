@@ -725,7 +725,7 @@ button {
 .reading-view,
 .explained-view {
   min-height: 100vh;
-  padding: 52px 24px 80px;
+  padding: 34px 20px 60px;
   background: var(--colour-background);
   color: var(--colour-primary);
 }
@@ -746,7 +746,7 @@ button {
   display: grid;
   gap: 5px;
   width: 46px;
-  margin-bottom: 30px;
+  margin-bottom: 22px;
 }
 
 .stack-mark span {
@@ -770,7 +770,7 @@ button {
 
 .reading-view__eyebrow,
 .explained-view__eyebrow {
-  margin: 0 0 18px;
+  margin: 0 0 14px;
   color: #68785c;
   font-size: 0.76rem;
   font-weight: 750;
@@ -780,17 +780,17 @@ button {
 
 .reading-view h1,
 .explained-view h1 {
-  max-width: 720px;
+  max-width: 520px;
   margin: 0;
-  font-size: clamp(2.7rem, 7vw, 5rem);
-  line-height: 1;
+  font-size: clamp(2.65rem, 11vw, 3.5rem);
+  line-height: 1.02;
   letter-spacing: -0.055em;
 }
 
 .reading-view__intro,
 .explained-view__intro {
   max-width: 640px;
-  margin: 26px 0 0;
+  margin: 14px 0 0;
   color: #686a63;
   font-size: 1.1rem;
   line-height: 1.65;
@@ -984,7 +984,7 @@ button {
   align-items: center;
   gap: 14px;
   max-width: 100%;
-  margin-top: 34px;
+  margin-top: 26px;
   padding: 14px 18px;
   border: 1px solid var(--colour-border);
   border-radius: 16px;
@@ -1030,7 +1030,7 @@ button {
 .meaning-section,
 .breakdown-section,
 .comparison-section {
-  margin-top: 92px;
+  margin-top: 58px;
 }
 
 .section-heading {
@@ -1563,7 +1563,7 @@ button {
 
 @media (max-width: 680px) {
   .pension-hero {
-    margin-top: 58px;
+    margin-top: 32px;
   }
 
   .forecast-summary,
@@ -1573,7 +1573,7 @@ button {
   .meaning-section,
   .breakdown-section,
   .comparison-section {
-    margin-top: 70px;
+    margin-top: 58px;
   }
 
   .scenario-selector {
