@@ -9,10 +9,12 @@ import Footer from "./Footer";
 import UploadView from "./UploadView";
 import ReadingForecastView from "./ReadingForecastView";
 import PensionExplainedView from "./PensionExplainedView";
+import IncomeStackBuilderView from "./IncomeStackBuilderView";
 
 function App() {
   const [view, setView] = useState("home");
   const [forecastFile, setForecastFile] = useState(null);
+  const [selectedPension, setSelectedPension] = useState(null);
 
   function goToView(nextView) {
     setView(nextView);
@@ -31,6 +33,11 @@ function App() {
   const handleReadingComplete = useCallback(() => {
     goToView("explained");
   }, []);
+
+  function handleBuildIncomeStack(pensionData) {
+    setSelectedPension(pensionData);
+    goToView("builder");
+  }
 
   if (view === "upload") {
     return (
@@ -56,6 +63,16 @@ function App() {
       <PensionExplainedView
         file={forecastFile}
         onBack={() => goToView("upload")}
+        onBuildStack={handleBuildIncomeStack}
+      />
+    );
+  }
+
+  if (view === "builder") {
+    return (
+      <IncomeStackBuilderView
+        pension={selectedPension}
+        onBack={() => goToView("explained")}
       />
     );
   }
