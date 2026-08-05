@@ -4145,3 +4145,139 @@ button {
     grid-template-columns: 1fr;
   }
 }
+/* ======================================================
+   ASSUMPTIONS + RETURN / DRAWDOWN CONTROLS
+====================================================== */
+
+.assumptions-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 190px;
+  gap: 18px;
+  align-items: end;
+
+  margin-top: 26px;
+  padding: 24px;
+
+  border: 1px solid var(--colour-border);
+  border-radius: 20px;
+
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.assumptions-bar h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  letter-spacing: -0.03em;
+}
+
+.money-mode-toggle {
+  display: flex;
+  padding: 4px;
+  border-radius: 14px;
+  background: #e7e8e1;
+}
+
+.money-mode-toggle__button {
+  min-height: 42px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #6f746b;
+  font-weight: 750;
+}
+
+.money-mode-toggle__button--active {
+  background: #ffffff;
+  color: var(--colour-primary);
+  box-shadow: 0 2px 8px rgba(35, 43, 31, 0.06);
+}
+
+.inflation-control > span {
+  display: block;
+  margin-bottom: 7px;
+  color: #73776e;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.assumptions-bar__note {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #73776e;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.builder-result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.builder-result-grid > div {
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: #edf0e7;
+}
+
+.builder-result-grid span {
+  display: block;
+  margin-bottom: 7px;
+  color: #737a6d;
+  font-size: 0.7rem;
+  font-weight: 750;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.builder-result-grid strong {
+  display: block;
+  color: var(--colour-primary);
+  font-size: 1.25rem;
+}
+
+.builder-summary__mode {
+  display: inline-flex;
+  margin-top: 12px;
+  padding: 7px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+/* ======================================================
+   MOBILE ASSUMPTIONS
+====================================================== */
+
+@media (max-width: 820px) {
+  .assumptions-bar {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .assumptions-bar__note {
+    grid-column: auto;
+  }
+
+  .money-mode-toggle {
+    width: 100%;
+  }
+
+  .money-mode-toggle__button {
+    flex: 1;
+  }
+}
+
+@media (max-width: 680px) {
+  .assumptions-bar {
+    padding: 20px;
+  }
+
+  .builder-result-grid {
+    grid-template-columns: 1fr;
+  }
+}
