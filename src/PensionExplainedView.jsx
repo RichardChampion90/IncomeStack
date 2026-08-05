@@ -71,9 +71,9 @@ const pensionForecast = {
           id: "spa",
           age: 68,
           badge: "AFPS 15",
-          title: "Your AFPS 15 pension becomes payable",
+          title: "Your full Armed Forces pension is now in payment",
           description:
-            "Your remaining AFPS 15 deferred pension becomes payable at the State Pension Age used in your forecast.",
+            "Your remaining AFPS 15 benefits become payable. The annual figure shown here is the total Armed Forces pension income shown in your forecast at age 68.",
           annualIncome: 22261,
         },
       ],
@@ -179,9 +179,9 @@ const pensionForecast = {
           id: "spa",
           age: 68,
           badge: "AFPS 15",
-          title: "Your AFPS 15 pension becomes payable",
+          title: "Your full Armed Forces pension is now in payment",
           description:
-            "Your remaining AFPS 15 deferred pension becomes payable at the State Pension Age used in your forecast.",
+            "Your remaining AFPS 15 benefits become payable. The annual figure shown here is the total Armed Forces pension income shown in your forecast at age 68.",
           annualIncome: 23750,
         },
       ],
@@ -249,7 +249,9 @@ function formatMoney(value) {
 }
 
 function formatYears(value) {
-  return Number.isInteger(value) ? `${value} years` : `${value.toFixed(1)} years`;
+  return Number.isInteger(value)
+    ? `${value} years`
+    : `${value.toFixed(1)} years`;
 }
 
 function ExpandableSection({
@@ -366,7 +368,7 @@ function PensionExplainedView({ file, onBack }) {
           <section className="remedy-section remedy-section--compressed compact-section">
             <div className="section-heading section-heading--compact">
               <p className="section-heading__eyebrow">2015 Pension Remedy</p>
-              <h2>Choose which outcome to view</h2>
+              <h2>Compare your two possible outcomes</h2>
             </div>
 
             <div
@@ -406,311 +408,4 @@ function PensionExplainedView({ file, onBack }) {
               {remedyInfoOpen ? "Hide explanation" : "What does this mean?"}
             </button>
 
-            {remedyInfoOpen && (
-              <div className="inline-info-panel">
-                <p>{pensionForecast.remedy.explanation}</p>
-                <p>{selectedScenario.description}</p>
-              </div>
-            )}
-          </section>
-        )}
-
-        <section className="current-outcome current-outcome--compressed compact-section">
-          <div className="current-outcome__heading">
-            <div>
-              <p className="section-heading__eyebrow">Selected outcome</p>
-              <h2>{selectedScenario.shortLabel}</h2>
-            </div>
-          </div>
-
-          <div className="headline-values headline-values--compact">
-            <article className="headline-card headline-card--primary">
-              <span>Income when you leave</span>
-              <strong>{formatMoney(selectedScenario.summary.exitIncome)}</strong>
-              <p>per year before tax</p>
-            </article>
-
-            <article className="headline-card">
-              <span>Lump sum at exit</span>
-              <strong>{formatMoney(selectedScenario.summary.exitLumpSum)}</strong>
-            </article>
-
-            <article className="headline-card">
-              <span>Later-life income</span>
-              <strong>{formatMoney(selectedScenario.summary.laterIncome)}</strong>
-              <p>per year at age {pensionForecast.member.statePensionAge}</p>
-            </article>
-          </div>
-
-          <div className="outcome-meaning">
-            <strong>What this means</strong>
-            <p>
-              You receive an income immediately after leaving service, and your
-              Armed Forces pension then increases as additional benefits become
-              payable later.
-            </p>
-          </div>
-        </section>
-
-        <section className="timeline-section timeline-section--compressed compact-section">
-          <div className="section-heading">
-            <p className="section-heading__eyebrow">Your pension journey</p>
-            <h2>What happens, and when</h2>
-          </div>
-
-          <div className="compact-timeline">
-            {selectedScenario.events.map((event, index) => {
-              const isExpanded = expandedEventId === event.id;
-
-              return (
-                <div className="compact-timeline__item" key={event.id}>
-                  <div className="compact-timeline__rail">
-                    <div className="compact-timeline__age">{event.age}</div>
-
-                    {index < selectedScenario.events.length - 1 && (
-                      <div className="compact-timeline__line" />
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    className="compact-timeline__event"
-                    onClick={() =>
-                      setExpandedEventId(isExpanded ? null : event.id)
-                    }
-                  >
-                    <div className="compact-timeline__main">
-                      <span>{event.badge}</span>
-                      <strong>{event.title}</strong>
-
-                      <div className="compact-timeline__figures">
-                        {event.annualIncome && (
-                          <b>{formatMoney(event.annualIncome)}/yr</b>
-                        )}
-
-                        {event.lumpSum && (
-                          <b>{formatMoney(event.lumpSum)} lump sum</b>
-                        )}
-                      </div>
-                    </div>
-
-                    <span className="compact-timeline__expand">
-                      {isExpanded ? "−" : "+"}
-                    </span>
-                  </button>
-
-                  {isExpanded && (
-                    <div className="compact-timeline__detail">
-                      <p>{event.description}</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="options-list compact-section">
-          <div className="section-heading section-heading--compact">
-            <p className="section-heading__eyebrow">Your options</p>
-            <h2>Explore the detail when you need it</h2>
-          </div>
-
-          <ExpandableSection
-            eyebrow="Commutation"
-            title="Taking a larger lump sum"
-            open={commutationOpen}
-            onToggle={() => setCommutationOpen((value) => !value)}
-          >
-            <p className="accordion-intro">
-              Your forecast shows that you may be able to exchange some annual
-              pension for a larger lump sum.
-            </p>
-
-            <div className="commutation-options commutation-options--compressed">
-              {selectedScenario.commutation.options.map((option) => (
-                <article
-                  key={option.id}
-                  className={`commutation-card ${
-                    option.id === "maximum"
-                      ? "commutation-card--highlight"
-                      : ""
-                  }`}
-                >
-                  <span className="commutation-card__label">{option.label}</span>
-
-                  <div className="commutation-pair">
-                    <div>
-                      <span>Annual pension</span>
-                      <strong>{formatMoney(option.pension)}</strong>
-                    </div>
-
-                    <div>
-                      <span>Lump sum</span>
-                      <strong>{formatMoney(option.lumpSum)}</strong>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            <div className="tradeoff-card tradeoff-card--compressed">
-              <p className="tradeoff-card__eyebrow">The trade-off</p>
-
-              <h3>More upfront, less pension each year.</h3>
-
-              <div className="tradeoff-grid">
-                <div>
-                  <span>Extra upfront</span>
-                  <strong>
-                    +{formatMoney(selectedScenario.commutation.tradeOff.extraLumpSum)}
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Pension given up</span>
-                  <strong>
-                    −
-                    {formatMoney(
-                      selectedScenario.commutation.tradeOff
-                        .annualPensionGivenUp,
-                    )}
-                    /yr
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Simple crossover</span>
-                  <strong>
-                    {formatYears(
-                      selectedScenario.commutation.tradeOff
-                        .simpleBreakEvenYears,
-                    )}
-                  </strong>
-                </div>
-              </div>
-
-              <p className="tradeoff-card__note">
-                This is a simple comparison of the figures in your forecast. It
-                does not account for tax, pension increases, investment
-                returns, longevity or personal circumstances.
-              </p>
-            </div>
-          </ExpandableSection>
-
-          <ExpandableSection
-            eyebrow="Early access"
-            title="Taking pension earlier"
-            open={earlyAccessOpen}
-            onToggle={() => setEarlyAccessOpen((value) => !value)}
-          >
-            <div className="simple-option-panel">
-              <div>
-                <span>Earliest age shown</span>
-                <strong>{selectedScenario.earlyAccess.minimumAge}</strong>
-              </div>
-
-              <p>{selectedScenario.earlyAccess.description}</p>
-            </div>
-          </ExpandableSection>
-
-          <ExpandableSection
-            eyebrow="Scheme breakdown"
-            title="Where your pension comes from"
-            open={breakdownOpen}
-            onToggle={() => setBreakdownOpen((value) => !value)}
-          >
-            <div className="scheme-breakdown scheme-breakdown--compressed">
-              {selectedScenario.benefitStreams.map((benefit, index) => (
-                <article key={`${benefit.scheme}-${index}`}>
-                  <span>{benefit.scheme}</span>
-                  <h3>{benefit.name}</h3>
-                  <p>{benefit.description}</p>
-                </article>
-              ))}
-            </div>
-          </ExpandableSection>
-
-          <ExpandableSection
-            eyebrow="2015 Pension Remedy"
-            title="Compare both outcomes"
-            open={comparisonOpen}
-            onToggle={() => setComparisonOpen((value) => !value)}
-          >
-            <div className="comparison-table-wrapper">
-              <table className="comparison-table">
-                <thead>
-                  <tr>
-                    <th>Milestone</th>
-                    <th>Legacy</th>
-                    <th>AFPS 15</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  <tr>
-                    <th>Income when leaving</th>
-                    <td>{formatMoney(9482)}</td>
-                    <td>{formatMoney(9027)}</td>
-                  </tr>
-
-                  <tr>
-                    <th>Lump sum at exit</th>
-                    <td>{formatMoney(59054)}</td>
-                    <td>{formatMoney(57900)}</td>
-                  </tr>
-
-                  <tr>
-                    <th>Income at 55</th>
-                    <td>{formatMoney(12471)}</td>
-                    <td>{formatMoney(10514)}</td>
-                  </tr>
-
-                  <tr>
-                    <th>Income at 65</th>
-                    <td>{formatMoney(15460)}</td>
-                    <td>{formatMoney(12001)}</td>
-                  </tr>
-
-                  <tr>
-                    <th>Income at 68</th>
-                    <td>{formatMoney(22261)}</td>
-                    <td>{formatMoney(23750)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </ExpandableSection>
-        </section>
-
-        <section className="next-step-section next-step-section--compressed compact-section">
-          <p className="section-heading__eyebrow">Income Stack</p>
-
-          <h2>Your pension is the foundation.</h2>
-
-          <p>
-            See how it could work alongside your future salary, workplace
-            pension, savings, investments and State Pension.
-          </p>
-
-          <button type="button" className="button button--primary">
-            Build my income stack →
-          </button>
-        </section>
-
-        <aside className="forecast-disclaimer forecast-disclaimer--compressed">
-          <strong>About these figures</strong>
-
-          <p>
-            Income Stack is displaying and explaining figures from your
-            uploaded Armed Forces pension forecast. It has not independently
-            calculated your pension or recommended which option you should
-            choose.
-          </p>
-        </aside>
-      </div>
-    </main>
-  );
-}
-
-export default PensionExplainedView;
+           
