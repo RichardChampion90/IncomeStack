@@ -1,88 +1,114 @@
 import { useMemo, useState } from "react";
 
+/* ======================================================
+   FORMATTING
+====================================================== */
+
 function formatMoney(value) {
   return new Intl.NumberFormat("en-GB", {
     style: "currency",
     currency: "GBP",
     maximumFractionDigits: 0,
-  }).format(Math.round(value || 0));
+  }).format(Math.round(Number(value) || 0));
 }
 
-function futureValueMonthly({
-  startingBalance,
-  monthlyContribution,
-  annualGrowth,
-  years,
-}) {
-  const months = Math.max(0, Math.round(years * 12));
-  const monthlyRate = annualGrowth / 100 / 12;
+function clampNumber(value, min = 0, max = Infinity) {
+  const number = Number(value);
 
-  let balance = Number(startingBalance) || 0;
-
-  for (let month = 0; month < months; month += 1) {
-    balance *= 1 + monthlyRate;
-    balance += Number(monthlyContribution) || 0;
+  if (!Number.isFinite(number)) {
+    return min;
   }
 
-  return balance;
+  return Math.min(Math.max(number, min), max);
 }
 
-function inflate(value, annualInflation, years) {
-  return value * Math.pow(1 + annualInflation / 100, Math.max(0, years));
+function inflationFactor(rate, years) {
+  return Math.pow(
+    1 + clampNumber(rate, 0, 20) / 100,
+    Math.max(0, years),
+  );
 }
 
-function deflate(value, annualInflation, years) {
-  return value / Math.pow(1 + annualInflation / 100, Math.max(0, years));
+function inflate(value, rate, years) {
+  return value * inflationFactor(rate, years);
 }
+
+function deflate(value, rate, years) {
+  return value / inflationFactor(rate, years);
+}
+
+/* ======================================================
+   ARMED FORCES PENSION
+
+   The uploaded/mock forecast is treated as the official
+   source for pension milestone values.
+
+   "Today's money":
+   return the official milestone amount.
+
+   "Future pounds":
+   express that official today's-money amount in nominal
+   pounds at the selected future age using the user's CPI
+   assumption.
+
+   This deliberately remains an illustration rather than
+   attempting to recreate the AFPS calculator.
+====================================================== */
 
 function officialPensionAtAge(pension, age) {
   if (!pension?.events?.length) {
     return 0;
   }
 
-  const events = pension.events
+  const eligibleEvents = pension.events
     .filter(
       (event) =>
-        event.age <= age &&
-        typeof event.annualIncome === "number",
+        typeof event.annualIncome === "number" &&
+        event.age <= age,
     )
     .sort((a, b) => a.age - b.age);
 
-  if (!events.length) {
+  if (!eligibleEvents.length) {
     return 0;
   }
 
-  return events[events.length - 1].annualIncome;
+  return eligibleEvents[
+    eligibleEvents.length - 1
+  ].annualIncome;
 }
 
-function projectedArmedForcesPension({
+function armedForcesPensionAtAge({
   pension,
   age,
   inflationRate,
   displayMode,
 }) {
-  if (!pension?.events?.length) {
+  const officialAmount =
+    officialPensionAtAge(pension, age);
+
+  if (!officialAmount) {
     return 0;
   }
-
-  const leavingAge = pension.leavingAge ?? 40;
-  const officialAmount = officialPensionAtAge(pension, age);
 
   if (displayMode === "today") {
     return officialAmount;
   }
 
+  const leavingAge = pension?.leavingAge ?? 40;
+
   /*
-    MLP inflation treatment:
+    The forecast figures are being treated as today's-money
+    values.
 
-    - Exit EDP remains flat in nominal pounds until 55.
-    - At 55, the age-55 official forecast amount is uplifted for
-      cumulative CPI since leaving.
-    - Thereafter the relevant official milestone amount is inflated
-      from leaving age to the age at which it is shown.
+    Before age 55, an AFPS15 EDP is nominally flat, so the
+    leaving amount is not inflated.
 
-    This is an Income Stack illustration, not a recalculation of
-    scheme entitlement.
+    From 55 onwards, the official milestone value is shown
+    in future nominal pounds using accumulated CPI from exit.
+
+    This is an illustration only. When real PDF parsing is
+    implemented we should attach scheme-specific inflation
+    rules to each benefit stream.
   */
 
   if (age < 55) {
@@ -96,194 +122,583 @@ function projectedArmedForcesPension({
   );
 }
 
-function IncomeStackBuilderView({ pension, onBack }) {
-  const leavingAge = pension?.leavingAge ?? 40;
-  const statePensionAge = pension?.statePensionAge ?? 68;
+/* ======================================================
+   SALARY
+====================================================== */
 
-  const [salary, setSalary] = useState(60000);
-  const [salaryStartAge, setSalaryStartAge] = useState(leavingAge);
-  const [salaryGrowthRate, setSalaryGrowthRate] = useState(2.5);
+function salaryAtAge({
+  startingSalary,
+  startAge,
+  age,
+  salaryGrowthRate,
+}) {
+  if (age < startAge) {
+    return 0;
+  }
 
-  const [workOptionalAge, setWorkOptionalAge] = useState(60);
+  return inflate(
+    startingSalary,
+    salaryGrowthRate,
+    age - startAge,
+  );
+}
 
-  const [employeePensionPercent, setEmployeePensionPercent] =
-    useState(8);
+/* ======================================================
+   DC WORKPLACE PENSION
 
-  const [employerPensionPercent, setEmployerPensionPercent] =
-    useState(8);
+   Contributions rise as salary rises.
 
-  const [workplacePensionGrowthRate, setWorkplacePensionGrowthRate] =
-    useState(5);
+   Monthly simulation avoids assuming every contribution
+   is based on the starting salary.
+====================================================== */
 
-  const [workplacePensionDrawdownRate, setWorkplacePensionDrawdownRate] =
-    useState(4);
+function projectWorkplacePensionToAge({
+  startingSalary,
+  salaryStartAge,
+  targetAge,
+  salaryGrowthRate,
+  employeePercent,
+  employerPercent,
+  investmentReturn,
+}) {
+  if (targetAge <= salaryStartAge) {
+    return 0;
+  }
 
-  const [existingInvestments, setExistingInvestments] =
-    useState(5000);
-
-  const [monthlyInvestments, setMonthlyInvestments] =
-    useState(500);
-
-  const [investmentGrowthRate, setInvestmentGrowthRate] =
-    useState(5);
-
-  const [investmentDrawdownRate, setInvestmentDrawdownRate] =
-    useState(4);
-
-  const [inflationRate, setInflationRate] = useState(2.5);
-
-  const [displayMode, setDisplayMode] = useState("today");
-
-  const [statePensionEnabled, setStatePensionEnabled] =
-    useState(true);
-
-  const [statePensionIncome, setStatePensionIncome] =
-    useState(12000);
-
-  const [statePensionStartAge, setStatePensionStartAge] =
-    useState(statePensionAge);
-
-  const yearsWorking = Math.max(
-    0,
-    workOptionalAge - salaryStartAge,
+  const months = Math.round(
+    (targetAge - salaryStartAge) * 12,
   );
 
-  const workplaceProjectionNominal = useMemo(() => {
-    const annualContribution =
-      salary *
-      ((employeePensionPercent + employerPensionPercent) / 100);
+  const monthlyInvestmentRate =
+    investmentReturn / 100 / 12;
 
-    return futureValueMonthly({
-      startingBalance: 0,
-      monthlyContribution: annualContribution / 12,
-      annualGrowth: workplacePensionGrowthRate,
-      years: yearsWorking,
-    });
-  }, [
-    salary,
-    employeePensionPercent,
-    employerPensionPercent,
-    workplacePensionGrowthRate,
-    yearsWorking,
-  ]);
+  const monthlySalaryGrowthRate =
+    salaryGrowthRate / 100 / 12;
 
-  const investmentProjectionNominal = useMemo(() => {
-    const years = Math.max(
+  const totalContributionPercent =
+    (employeePercent + employerPercent) / 100;
+
+  let balance = 0;
+  let monthlySalary = startingSalary / 12;
+
+  for (let month = 0; month < months; month += 1) {
+    balance *= 1 + monthlyInvestmentRate;
+
+    balance +=
+      monthlySalary * totalContributionPercent;
+
+    monthlySalary *=
+      1 + monthlySalaryGrowthRate;
+  }
+
+  return balance;
+}
+
+/* ======================================================
+   SAVINGS / INVESTMENTS
+====================================================== */
+
+function projectInvestmentsToAge({
+  startingBalance,
+  monthlyContribution,
+  fromAge,
+  targetAge,
+  investmentReturn,
+}) {
+  const months = Math.max(
+    0,
+    Math.round((targetAge - fromAge) * 12),
+  );
+
+  const monthlyRate =
+    investmentReturn / 100 / 12;
+
+  let balance = startingBalance;
+
+  for (let month = 0; month < months; month += 1) {
+    balance *= 1 + monthlyRate;
+    balance += monthlyContribution;
+  }
+
+  return balance;
+}
+
+/* ======================================================
+   POT AFTER DRAWDOWN STARTS
+
+   Simple percentage drawdown model:
+
+   - pot continues growing
+   - each year, selected percentage of current pot is drawn
+   - remaining pot rolls forward
+
+   This is deliberately an illustration rather than a
+   sustainable-withdrawal recommendation.
+====================================================== */
+
+function projectPotWithDrawdown({
+  startingPot,
+  startingAge,
+  targetAge,
+  annualGrowthRate,
+  drawdownRate,
+}) {
+  let balance = Math.max(0, startingPot);
+
+  if (targetAge <= startingAge) {
+    return {
+      balance,
+      annualIncome:
+        balance * (drawdownRate / 100),
+    };
+  }
+
+  const years = targetAge - startingAge;
+
+  for (let year = 0; year < years; year += 1) {
+    balance *=
+      1 + annualGrowthRate / 100;
+
+    const withdrawal =
+      balance * (drawdownRate / 100);
+
+    balance = Math.max(
       0,
-      workOptionalAge - leavingAge,
+      balance - withdrawal,
+    );
+  }
+
+  return {
+    balance,
+    annualIncome:
+      balance * (drawdownRate / 100),
+  };
+}
+
+/* ======================================================
+   MAIN COMPONENT
+====================================================== */
+
+function IncomeStackBuilderView({
+  pension,
+  onBack,
+}) {
+  const leavingAge =
+    pension?.leavingAge ?? 40;
+
+  const statePensionAge =
+    pension?.statePensionAge ?? 68;
+
+  /* ---------- Display ---------- */
+
+  const [displayMode, setDisplayMode] =
+    useState("future");
+
+  const [inflationRate, setInflationRate] =
+    useState(2.5);
+
+  /* ---------- Job ---------- */
+
+  const [salary, setSalary] =
+    useState(60000);
+
+  const [salaryStartAge, setSalaryStartAge] =
+    useState(leavingAge);
+
+  const [salaryGrowthRate, setSalaryGrowthRate] =
+    useState(2);
+
+  /* ---------- Retirement goal ---------- */
+
+  const [workOptionalAge, setWorkOptionalAge] =
+    useState(60);
+
+  /* ---------- Workplace pension ---------- */
+
+  const [
+    employeePensionPercent,
+    setEmployeePensionPercent,
+  ] = useState(8);
+
+  const [
+    employerPensionPercent,
+    setEmployerPensionPercent,
+  ] = useState(8);
+
+  const [
+    workplacePensionGrowthRate,
+    setWorkplacePensionGrowthRate,
+  ] = useState(4);
+
+  const [
+    workplacePensionDrawdownRate,
+    setWorkplacePensionDrawdownRate,
+  ] = useState(4);
+
+  const [
+    workplacePensionAccessAge,
+    setWorkplacePensionAccessAge,
+  ] = useState(57);
+
+  /* ---------- Investments ---------- */
+
+  const [
+    existingInvestments,
+    setExistingInvestments,
+  ] = useState(5000);
+
+  const [
+    monthlyInvestments,
+    setMonthlyInvestments,
+  ] = useState(500);
+
+  const [
+    investmentGrowthRate,
+    setInvestmentGrowthRate,
+  ] = useState(5);
+
+  const [
+    investmentDrawdownRate,
+    setInvestmentDrawdownRate,
+  ] = useState(4);
+
+  /* ---------- State Pension ---------- */
+
+  const [
+    statePensionEnabled,
+    setStatePensionEnabled,
+  ] = useState(true);
+
+  const [
+    statePensionIncome,
+    setStatePensionIncome,
+  ] = useState(12000);
+
+  const [
+    statePensionStartAge,
+    setStatePensionStartAge,
+  ] = useState(statePensionAge);
+
+  /* ====================================================
+     SALARY
+  ==================================================== */
+
+  const salaryWhenLeaving =
+    salaryAtAge({
+      startingSalary: salary,
+      startAge: salaryStartAge,
+      age: leavingAge,
+      salaryGrowthRate,
+    });
+
+  /* ====================================================
+     POT VALUES WHEN WORK STOPS
+  ==================================================== */
+
+  const workplacePotAtOptionalNominal =
+    useMemo(() => {
+      return projectWorkplacePensionToAge({
+        startingSalary: salary,
+        salaryStartAge,
+        targetAge: workOptionalAge,
+        salaryGrowthRate,
+        employeePercent:
+          employeePensionPercent,
+        employerPercent:
+          employerPensionPercent,
+        investmentReturn:
+          workplacePensionGrowthRate,
+      });
+    }, [
+      salary,
+      salaryStartAge,
+      workOptionalAge,
+      salaryGrowthRate,
+      employeePensionPercent,
+      employerPensionPercent,
+      workplacePensionGrowthRate,
+    ]);
+
+  const investmentsAtOptionalNominal =
+    useMemo(() => {
+      return projectInvestmentsToAge({
+        startingBalance:
+          existingInvestments,
+        monthlyContribution:
+          monthlyInvestments,
+        fromAge: leavingAge,
+        targetAge: workOptionalAge,
+        investmentReturn:
+          investmentGrowthRate,
+      });
+    }, [
+      existingInvestments,
+      monthlyInvestments,
+      leavingAge,
+      workOptionalAge,
+      investmentGrowthRate,
+    ]);
+
+  /* ====================================================
+     WORKPLACE PENSION ACCESS
+
+     If work stops before access age, the pension remains
+     invested until access age. No workplace pension
+     drawdown is included before that point.
+  ==================================================== */
+
+  const workplaceDrawdownStartAge =
+    Math.max(
+      workOptionalAge,
+      workplacePensionAccessAge,
     );
 
-    return futureValueMonthly({
-      startingBalance: existingInvestments,
-      monthlyContribution: monthlyInvestments,
-      annualGrowth: investmentGrowthRate,
-      years,
-    });
-  }, [
-    existingInvestments,
-    monthlyInvestments,
-    investmentGrowthRate,
-    leavingAge,
-    workOptionalAge,
-  ]);
+  const workplacePotAtAccessNominal =
+    useMemo(() => {
+      if (
+        workplaceDrawdownStartAge ===
+        workOptionalAge
+      ) {
+        return workplacePotAtOptionalNominal;
+      }
 
-  const yearsToOptional = Math.max(
-    0,
-    workOptionalAge - leavingAge,
-  );
-
-  const workplaceProjection =
-    displayMode === "today"
-      ? deflate(
-          workplaceProjectionNominal,
-          inflationRate,
-          yearsToOptional,
+      return (
+        workplacePotAtOptionalNominal *
+        Math.pow(
+          1 +
+            workplacePensionGrowthRate /
+              100,
+          workplaceDrawdownStartAge -
+            workOptionalAge,
         )
-      : workplaceProjectionNominal;
+      );
+    }, [
+      workplacePotAtOptionalNominal,
+      workplaceDrawdownStartAge,
+      workOptionalAge,
+      workplacePensionGrowthRate,
+    ]);
 
-  const investmentProjection =
-    displayMode === "today"
-      ? deflate(
-          investmentProjectionNominal,
-          inflationRate,
-          yearsToOptional,
-        )
-      : investmentProjectionNominal;
+  /* ====================================================
+     POT PROJECTIONS AT STATE-PENSION AGE
+  ==================================================== */
 
-  const workplaceIncome =
-    workplaceProjection *
-    (workplacePensionDrawdownRate / 100);
+  const workplaceAtStateAgeNominal =
+    useMemo(() => {
+      if (
+        statePensionStartAge <
+        workplaceDrawdownStartAge
+      ) {
+        return {
+          balance:
+            workplacePotAtAccessNominal,
+          annualIncome: 0,
+        };
+      }
 
-  const investmentIncome =
-    investmentProjection *
-    (investmentDrawdownRate / 100);
+      return projectPotWithDrawdown({
+        startingPot:
+          workplacePotAtAccessNominal,
+        startingAge:
+          workplaceDrawdownStartAge,
+        targetAge:
+          statePensionStartAge,
+        annualGrowthRate:
+          workplacePensionGrowthRate,
+        drawdownRate:
+          workplacePensionDrawdownRate,
+      });
+    }, [
+      workplacePotAtAccessNominal,
+      workplaceDrawdownStartAge,
+      statePensionStartAge,
+      workplacePensionGrowthRate,
+      workplacePensionDrawdownRate,
+    ]);
 
-  const pensionAtLeaving = projectedArmedForcesPension({
-    pension,
-    age: leavingAge,
-    inflationRate,
-    displayMode,
-  });
+  const investmentsAtStateAgeNominal =
+    useMemo(() => {
+      return projectPotWithDrawdown({
+        startingPot:
+          investmentsAtOptionalNominal,
+        startingAge:
+          workOptionalAge,
+        targetAge:
+          statePensionStartAge,
+        annualGrowthRate:
+          investmentGrowthRate,
+        drawdownRate:
+          investmentDrawdownRate,
+      });
+    }, [
+      investmentsAtOptionalNominal,
+      workOptionalAge,
+      statePensionStartAge,
+      investmentGrowthRate,
+      investmentDrawdownRate,
+    ]);
 
-  const pensionAtOptional = projectedArmedForcesPension({
-    pension,
-    age: workOptionalAge,
-    inflationRate,
-    displayMode,
-  });
+  /* ====================================================
+     DRAW DOWN INCOME AT OPTIONAL AGE
+  ==================================================== */
 
-  const pensionAtStateAge = projectedArmedForcesPension({
-    pension,
-    age: statePensionStartAge,
-    inflationRate,
-    displayMode,
-  });
-
-  const salaryAtLeaving =
-    salaryStartAge <= leavingAge ? salary : 0;
-
-  const salaryAtOptionalNominal =
-    workOptionalAge >= salaryStartAge
-      ? inflate(
-          salary,
-          salaryGrowthRate,
-          workOptionalAge - salaryStartAge,
-        )
+  const workplaceIncomeAtOptionalNominal =
+    workOptionalAge >=
+    workplacePensionAccessAge
+      ? workplacePotAtOptionalNominal *
+        (workplacePensionDrawdownRate /
+          100)
       : 0;
 
-  const salaryAtOptional =
-    displayMode === "today"
-      ? deflate(
-          salaryAtOptionalNominal,
-          inflationRate,
-          yearsToOptional,
-        )
-      : salaryAtOptionalNominal;
+  const investmentIncomeAtOptionalNominal =
+    investmentsAtOptionalNominal *
+    (investmentDrawdownRate / 100);
+
+  /* ====================================================
+     ARMED FORCES PENSION
+  ==================================================== */
+
+  const afPensionAtLeaving =
+    armedForcesPensionAtAge({
+      pension,
+      age: leavingAge,
+      inflationRate,
+      displayMode,
+    });
+
+  const afPensionAtOptional =
+    armedForcesPensionAtAge({
+      pension,
+      age: workOptionalAge,
+      inflationRate,
+      displayMode,
+    });
+
+  const afPensionAtStateAge =
+    armedForcesPensionAtAge({
+      pension,
+      age: statePensionStartAge,
+      inflationRate,
+      displayMode,
+    });
+
+  /* ====================================================
+     DISPLAY CONVERSION
+
+     Pot projections above are nominal.
+
+     Today's-money mode converts them back into current
+     purchasing power.
+  ==================================================== */
+
+  const convertFromFuture = (
+    value,
+    age,
+  ) => {
+    if (displayMode === "future") {
+      return value;
+    }
+
+    return deflate(
+      value,
+      inflationRate,
+      age - leavingAge,
+    );
+  };
+
+  const workplacePotAtOptional =
+    convertFromFuture(
+      workplacePotAtOptionalNominal,
+      workOptionalAge,
+    );
+
+  const investmentsAtOptional =
+    convertFromFuture(
+      investmentsAtOptionalNominal,
+      workOptionalAge,
+    );
+
+  const workplaceIncomeAtOptional =
+    convertFromFuture(
+      workplaceIncomeAtOptionalNominal,
+      workOptionalAge,
+    );
+
+  const investmentIncomeAtOptional =
+    convertFromFuture(
+      investmentIncomeAtOptionalNominal,
+      workOptionalAge,
+    );
+
+  const workplacePotAtStateAge =
+    convertFromFuture(
+      workplaceAtStateAgeNominal.balance,
+      statePensionStartAge,
+    );
+
+  const investmentPotAtStateAge =
+    convertFromFuture(
+      investmentsAtStateAgeNominal.balance,
+      statePensionStartAge,
+    );
+
+  const workplaceIncomeAtStateAge =
+    convertFromFuture(
+      workplaceAtStateAgeNominal.annualIncome,
+      statePensionStartAge,
+    );
+
+  const investmentIncomeAtStateAge =
+    convertFromFuture(
+      investmentsAtStateAgeNominal.annualIncome,
+      statePensionStartAge,
+    );
+
+  /* ====================================================
+     STATE PENSION
+
+     User input is explicitly in today's money.
+  ==================================================== */
 
   const statePensionAtStateAge =
-    statePensionEnabled
-      ? displayMode === "today"
+    !statePensionEnabled
+      ? 0
+      : displayMode === "today"
         ? statePensionIncome
         : inflate(
             statePensionIncome,
             inflationRate,
-            statePensionStartAge - leavingAge,
-          )
-      : 0;
+            statePensionStartAge -
+              leavingAge,
+          );
+
+  /* ====================================================
+     TOTAL INCOME
+  ==================================================== */
+
+  const salaryAtLeavingDisplay =
+    displayMode === "today"
+      ? salaryWhenLeaving
+      : salaryWhenLeaving;
 
   const totalAtLeaving =
-    salaryAtLeaving + pensionAtLeaving;
+    salaryAtLeavingDisplay +
+    afPensionAtLeaving;
 
-  const retirementIncomeAtOptional =
-    pensionAtOptional +
-    workplaceIncome +
-    investmentIncome;
+  const totalAtOptional =
+    afPensionAtOptional +
+    workplaceIncomeAtOptional +
+    investmentIncomeAtOptional;
 
   const totalAtStateAge =
-    pensionAtStateAge +
-    workplaceIncome +
-    investmentIncome +
+    afPensionAtStateAge +
+    workplaceIncomeAtStateAge +
+    investmentIncomeAtStateAge +
     statePensionAtStateAge;
+
+  const pensionAvailableAtOptional =
+    workOptionalAge >=
+    workplacePensionAccessAge;
 
   return (
     <main className="builder-view">
@@ -296,8 +711,15 @@ function IncomeStackBuilderView({ pension, onBack }) {
           ← Back to pension
         </button>
 
+        {/* =================================================
+            HERO
+        ================================================= */}
+
         <section className="builder-hero">
-          <div className="stack-mark" aria-hidden="true">
+          <div
+            className="stack-mark"
+            aria-hidden="true"
+          >
             <span />
             <span />
             <span />
@@ -308,14 +730,21 @@ function IncomeStackBuilderView({ pension, onBack }) {
           </p>
 
           <h1>
-            What could life after service look like?
+            What could life after service
+            look like?
           </h1>
 
           <p>
-            Your Armed Forces pension gives you the foundation.
-            Now add the other income you expect to build after leaving.
+            Your Armed Forces pension gives you
+            the foundation. Now add the other
+            income you expect to build after
+            leaving.
           </p>
         </section>
+
+        {/* =================================================
+            FOUNDATION
+        ================================================= */}
 
         <section className="foundation-card">
           <div>
@@ -323,7 +752,9 @@ function IncomeStackBuilderView({ pension, onBack }) {
               Your foundation
             </p>
 
-            <h2>Armed Forces pension</h2>
+            <h2>
+              Armed Forces pension
+            </h2>
 
             <p>
               {pension?.scenarioName ||
@@ -333,23 +764,35 @@ function IncomeStackBuilderView({ pension, onBack }) {
 
           <div className="foundation-card__figures">
             <div>
-              <span>From age {leavingAge}</span>
+              <span>
+                From age {leavingAge}
+              </span>
 
               <strong>
-                {formatMoney(pension?.exitIncome || 0)}
+                {formatMoney(
+                  pension?.exitIncome || 0,
+                )}
                 /yr
               </strong>
             </div>
 
             <div>
-              <span>Exit lump sum</span>
+              <span>
+                Exit lump sum
+              </span>
 
               <strong>
-                {formatMoney(pension?.exitLumpSum || 0)}
+                {formatMoney(
+                  pension?.exitLumpSum || 0,
+                )}
               </strong>
             </div>
           </div>
         </section>
+
+        {/* =================================================
+            PROJECTION SETTINGS
+        ================================================= */}
 
         <section className="assumptions-bar">
           <div>
@@ -357,48 +800,61 @@ function IncomeStackBuilderView({ pension, onBack }) {
               Projection settings
             </p>
 
-            <h2>How should we show your future money?</h2>
+            <h2>
+              How should we show your future
+              money?
+            </h2>
           </div>
 
           <div className="money-mode-toggle">
             <button
               type="button"
-              className={
+              className={`money-mode-toggle__button ${
                 displayMode === "today"
-                  ? "money-mode-toggle__button money-mode-toggle__button--active"
-                  : "money-mode-toggle__button"
+                  ? "money-mode-toggle__button--active"
+                  : ""
+              }`}
+              onClick={() =>
+                setDisplayMode("today")
               }
-              onClick={() => setDisplayMode("today")}
             >
               Today’s money
             </button>
 
             <button
               type="button"
-              className={
+              className={`money-mode-toggle__button ${
                 displayMode === "future"
-                  ? "money-mode-toggle__button money-mode-toggle__button--active"
-                  : "money-mode-toggle__button"
+                  ? "money-mode-toggle__button--active"
+                  : ""
+              }`}
+              onClick={() =>
+                setDisplayMode("future")
               }
-              onClick={() => setDisplayMode("future")}
             >
               Future pounds
             </button>
           </div>
 
           <label className="inflation-control">
-            <span>Assumed CPI inflation</span>
+            <span>
+              Assumed CPI inflation
+            </span>
 
             <div className="suffix-input">
               <input
                 type="number"
+                value={inflationRate}
                 min="0"
                 max="10"
                 step="0.1"
-                value={inflationRate}
                 onChange={(event) =>
                   setInflationRate(
-                    Number(event.target.value),
+                    clampNumber(
+                      event.target.value,
+                      0,
+                      10,
+                    ),
                   )
                 }
               />
@@ -408,11 +864,17 @@ function IncomeStackBuilderView({ pension, onBack }) {
           </label>
 
           <p className="assumptions-bar__note">
-            Today’s money removes the effect of inflation so future
-            figures are easier to compare with what money buys today.
-            Future pounds shows the estimated nominal amount at that age.
+            Today’s money shows future income in
+            current purchasing power. Future
+            pounds shows the estimated nominal
+            amount you may actually see at that
+            age.
           </p>
         </section>
+
+        {/* =================================================
+            BUILDER
+        ================================================= */}
 
         <div className="builder-layout">
           <section className="builder-inputs">
@@ -421,13 +883,18 @@ function IncomeStackBuilderView({ pension, onBack }) {
                 Add your future
               </p>
 
-              <h2>Build on top of your pension</h2>
+              <h2>
+                Build on top of your pension
+              </h2>
 
               <p>
-                These are planning assumptions. You can change them
-                at any time.
+                These are planning assumptions.
+                Change them and your Income Stack
+                updates immediately.
               </p>
             </div>
+
+            {/* JOB */}
 
             <article className="builder-input-card">
               <div className="builder-input-card__number">
@@ -439,14 +906,17 @@ function IncomeStackBuilderView({ pension, onBack }) {
                   <h3>Your next job</h3>
 
                   <p>
-                    What might you earn after leaving the Armed Forces?
+                    What might you earn after
+                    leaving the Armed Forces?
                   </p>
                 </div>
               </div>
 
               <div className="builder-fields">
                 <label>
-                  <span>Annual salary</span>
+                  <span>
+                    Annual salary
+                  </span>
 
                   <div className="money-input">
                     <span>£</span>
@@ -456,7 +926,9 @@ function IncomeStackBuilderView({ pension, onBack }) {
                       value={salary}
                       onChange={(event) =>
                         setSalary(
-                          Number(event.target.value),
+                          clampNumber(
+                            event.target.value,
+                          ),
                         )
                       }
                     />
@@ -470,17 +942,23 @@ function IncomeStackBuilderView({ pension, onBack }) {
                     type="number"
                     value={salaryStartAge}
                     min={leavingAge}
-                    max={75}
+                    max="75"
                     onChange={(event) =>
                       setSalaryStartAge(
-                        Number(event.target.value),
+                        clampNumber(
+                          event.target.value,
+                          leavingAge,
+                          75,
+                        ),
                       )
                     }
                   />
                 </label>
 
                 <label>
-                  <span>Annual salary growth</span>
+                  <span>
+                    Annual salary growth
+                  </span>
 
                   <div className="suffix-input">
                     <input
@@ -491,7 +969,11 @@ function IncomeStackBuilderView({ pension, onBack }) {
                       step="0.1"
                       onChange={(event) =>
                         setSalaryGrowthRate(
-                          Number(event.target.value),
+                          clampNumber(
+                            event.target.value,
+                            0,
+                            10,
+                          ),
                         )
                       }
                     />
@@ -501,6 +983,8 @@ function IncomeStackBuilderView({ pension, onBack }) {
                 </label>
               </div>
             </article>
+
+            {/* WORKPLACE PENSION */}
 
             <article className="builder-input-card">
               <div className="builder-input-card__number">
@@ -509,29 +993,41 @@ function IncomeStackBuilderView({ pension, onBack }) {
 
               <div className="builder-input-card__heading">
                 <div>
-                  <h3>Workplace pension</h3>
+                  <h3>
+                    Workplace pension
+                  </h3>
 
                   <p>
-                    Model your future defined-contribution pension pot
-                    separately from your other investments.
+                    Model a future
+                    defined-contribution pension
+                    separately from your Armed
+                    Forces pension.
                   </p>
                 </div>
               </div>
 
-              <div className="builder-fields">
+              <div className="builder-fields builder-fields--compact-four">
                 <label>
-                  <span>Your contribution</span>
+                  <span>
+                    Your contribution
+                  </span>
 
                   <div className="suffix-input">
                     <input
                       type="number"
-                      value={employeePensionPercent}
+                      value={
+                        employeePensionPercent
+                      }
                       min="0"
                       max="100"
                       step="0.5"
                       onChange={(event) =>
                         setEmployeePensionPercent(
-                          Number(event.target.value),
+                          clampNumber(
+                            event.target.value,
+                            0,
+                            100,
+                          ),
                         )
                       }
                     />
@@ -541,18 +1037,26 @@ function IncomeStackBuilderView({ pension, onBack }) {
                 </label>
 
                 <label>
-                  <span>Employer contribution</span>
+                  <span>
+                    Employer contribution
+                  </span>
 
                   <div className="suffix-input">
                     <input
                       type="number"
-                      value={employerPensionPercent}
+                      value={
+                        employerPensionPercent
+                      }
                       min="0"
                       max="100"
                       step="0.5"
                       onChange={(event) =>
                         setEmployerPensionPercent(
-                          Number(event.target.value),
+                          clampNumber(
+                            event.target.value,
+                            0,
+                            100,
+                          ),
                         )
                       }
                     />
@@ -562,18 +1066,26 @@ function IncomeStackBuilderView({ pension, onBack }) {
                 </label>
 
                 <label>
-                  <span>Investment return</span>
+                  <span>
+                    Investment return
+                  </span>
 
                   <div className="suffix-input">
                     <input
                       type="number"
-                      value={workplacePensionGrowthRate}
+                      value={
+                        workplacePensionGrowthRate
+                      }
                       min="0"
                       max="15"
                       step="0.1"
                       onChange={(event) =>
                         setWorkplacePensionGrowthRate(
-                          Number(event.target.value),
+                          clampNumber(
+                            event.target.value,
+                            0,
+                            15,
+                          ),
                         )
                       }
                     />
@@ -583,49 +1095,111 @@ function IncomeStackBuilderView({ pension, onBack }) {
                 </label>
 
                 <label>
-                  <span>Drawdown rate</span>
+                  <span>
+                    Drawdown rate
+                  </span>
 
                   <div className="suffix-input">
                     <input
                       type="number"
-                      value={workplacePensionDrawdownRate}
+                      value={
+                        workplacePensionDrawdownRate
+                      }
                       min="0"
                       max="10"
                       step="0.1"
                       onChange={(event) =>
                         setWorkplacePensionDrawdownRate(
-                          Number(event.target.value),
+                          clampNumber(
+                            event.target.value,
+                            0,
+                            10,
+                          ),
                         )
                       }
                     />
 
                     <span>%</span>
                   </div>
+                </label>
+
+                <label>
+                  <span>
+                    Pension access age
+                  </span>
+
+                  <input
+                    type="number"
+                    value={
+                      workplacePensionAccessAge
+                    }
+                    min="55"
+                    max="75"
+                    onChange={(event) =>
+                      setWorkplacePensionAccessAge(
+                        clampNumber(
+                          event.target.value,
+                          55,
+                          75,
+                        ),
+                      )
+                    }
+                  />
                 </label>
               </div>
 
               <div className="builder-result-grid">
                 <div>
                   <span>
-                    Projected pot at age {workOptionalAge}
+                    Projected pot when work
+                    stops at {workOptionalAge}
                   </span>
 
                   <strong>
-                    {formatMoney(workplaceProjection)}
+                    {formatMoney(
+                      workplacePotAtOptional,
+                    )}
                   </strong>
                 </div>
 
                 <div>
                   <span>
-                    Illustrative annual drawdown
+                    Illustrative income at{" "}
+                    {workOptionalAge}
                   </span>
 
                   <strong>
-                    {formatMoney(workplaceIncome)}/yr
+                    {pensionAvailableAtOptional
+                      ? `${formatMoney(
+                          workplaceIncomeAtOptional,
+                        )}/yr`
+                      : "Not yet accessible"}
                   </strong>
                 </div>
               </div>
+
+              {!pensionAvailableAtOptional && (
+                <div className="builder-access-note">
+                  <strong>
+                    Pension bridge needed
+                  </strong>
+
+                  <p>
+                    You’ve selected work becoming
+                    optional at age{" "}
+                    {workOptionalAge}, but this
+                    pension is set to become
+                    accessible at age{" "}
+                    {workplacePensionAccessAge}.
+                    Income Stack therefore excludes
+                    it from your income before that
+                    age.
+                  </p>
+                </div>
+              )}
             </article>
+
+            {/* SAVINGS */}
 
             <article className="builder-input-card">
               <div className="builder-input-card__number">
@@ -634,28 +1208,37 @@ function IncomeStackBuilderView({ pension, onBack }) {
 
               <div className="builder-input-card__heading">
                 <div>
-                  <h3>Savings & investments</h3>
+                  <h3>
+                    Savings & investments
+                  </h3>
 
                   <p>
-                    Use separate growth and withdrawal assumptions for
-                    your ISA, investments or other accessible savings.
+                    Model accessible savings,
+                    ISAs and investments separately
+                    from your pension.
                   </p>
                 </div>
               </div>
 
-              <div className="builder-fields">
+              <div className="builder-fields builder-fields--compact-four">
                 <label>
-                  <span>Already invested</span>
+                  <span>
+                    Already invested
+                  </span>
 
                   <div className="money-input">
                     <span>£</span>
 
                     <input
                       type="number"
-                      value={existingInvestments}
+                      value={
+                        existingInvestments
+                      }
                       onChange={(event) =>
                         setExistingInvestments(
-                          Number(event.target.value),
+                          clampNumber(
+                            event.target.value,
+                          ),
                         )
                       }
                     />
@@ -663,17 +1246,23 @@ function IncomeStackBuilderView({ pension, onBack }) {
                 </label>
 
                 <label>
-                  <span>Add each month</span>
+                  <span>
+                    Add each month
+                  </span>
 
                   <div className="money-input">
                     <span>£</span>
 
                     <input
                       type="number"
-                      value={monthlyInvestments}
+                      value={
+                        monthlyInvestments
+                      }
                       onChange={(event) =>
                         setMonthlyInvestments(
-                          Number(event.target.value),
+                          clampNumber(
+                            event.target.value,
+                          ),
                         )
                       }
                     />
@@ -681,18 +1270,26 @@ function IncomeStackBuilderView({ pension, onBack }) {
                 </label>
 
                 <label>
-                  <span>Investment return</span>
+                  <span>
+                    Investment return
+                  </span>
 
                   <div className="suffix-input">
                     <input
                       type="number"
-                      value={investmentGrowthRate}
+                      value={
+                        investmentGrowthRate
+                      }
                       min="0"
                       max="15"
                       step="0.1"
                       onChange={(event) =>
                         setInvestmentGrowthRate(
-                          Number(event.target.value),
+                          clampNumber(
+                            event.target.value,
+                            0,
+                            15,
+                          ),
                         )
                       }
                     />
@@ -702,18 +1299,26 @@ function IncomeStackBuilderView({ pension, onBack }) {
                 </label>
 
                 <label>
-                  <span>Drawdown rate</span>
+                  <span>
+                    Drawdown rate
+                  </span>
 
                   <div className="suffix-input">
                     <input
                       type="number"
-                      value={investmentDrawdownRate}
+                      value={
+                        investmentDrawdownRate
+                      }
                       min="0"
                       max="10"
                       step="0.1"
                       onChange={(event) =>
                         setInvestmentDrawdownRate(
-                          Number(event.target.value),
+                          clampNumber(
+                            event.target.value,
+                            0,
+                            10,
+                          ),
                         )
                       }
                     />
@@ -726,25 +1331,33 @@ function IncomeStackBuilderView({ pension, onBack }) {
               <div className="builder-result-grid">
                 <div>
                   <span>
-                    Projected value at age {workOptionalAge}
+                    Projected value at age{" "}
+                    {workOptionalAge}
                   </span>
 
                   <strong>
-                    {formatMoney(investmentProjection)}
+                    {formatMoney(
+                      investmentsAtOptional,
+                    )}
                   </strong>
                 </div>
 
                 <div>
                   <span>
-                    Illustrative annual drawdown
+                    Illustrative drawdown
                   </span>
 
                   <strong>
-                    {formatMoney(investmentIncome)}/yr
+                    {formatMoney(
+                      investmentIncomeAtOptional,
+                    )}
+                    /yr
                   </strong>
                 </div>
               </div>
             </article>
+
+            {/* STATE PENSION */}
 
             <article className="builder-input-card">
               <div className="builder-input-card__number">
@@ -756,8 +1369,9 @@ function IncomeStackBuilderView({ pension, onBack }) {
                   <h3>State Pension</h3>
 
                   <p>
-                    Include an editable State Pension assumption in your
-                    later-life income.
+                    Add an editable State Pension
+                    assumption to your later-life
+                    income.
                   </p>
                 </div>
 
@@ -783,17 +1397,24 @@ function IncomeStackBuilderView({ pension, onBack }) {
               {statePensionEnabled && (
                 <div className="builder-fields">
                   <label>
-                    <span>Annual amount in today’s money</span>
+                    <span>
+                      Annual amount in today’s
+                      money
+                    </span>
 
                     <div className="money-input">
                       <span>£</span>
 
                       <input
                         type="number"
-                        value={statePensionIncome}
+                        value={
+                          statePensionIncome
+                        }
                         onChange={(event) =>
                           setStatePensionIncome(
-                            Number(event.target.value),
+                            clampNumber(
+                              event.target.value,
+                            ),
                           )
                         }
                       />
@@ -801,16 +1422,24 @@ function IncomeStackBuilderView({ pension, onBack }) {
                   </label>
 
                   <label>
-                    <span>From age</span>
+                    <span>
+                      From age
+                    </span>
 
                     <input
                       type="number"
-                      value={statePensionStartAge}
+                      value={
+                        statePensionStartAge
+                      }
                       min="55"
                       max="75"
                       onChange={(event) =>
                         setStatePensionStartAge(
-                          Number(event.target.value),
+                          clampNumber(
+                            event.target.value,
+                            55,
+                            75,
+                          ),
                         )
                       }
                     />
@@ -820,6 +1449,10 @@ function IncomeStackBuilderView({ pension, onBack }) {
             </article>
           </section>
 
+          {/* =================================================
+              SUMMARY
+          ================================================= */}
+
           <aside className="builder-summary">
             <div className="builder-summary__sticky">
               <p className="builder-eyebrow">
@@ -827,42 +1460,59 @@ function IncomeStackBuilderView({ pension, onBack }) {
               </p>
 
               <h2>
-                When would you like work to become optional?
+                When would you like work to
+                become optional?
               </h2>
 
               <div className="optional-age">
-                <strong>{workOptionalAge}</strong>
+                <strong>
+                  {workOptionalAge}
+                </strong>
+
                 <span>years old</span>
               </div>
 
               <input
                 className="optional-age-slider"
                 type="range"
-                min={Math.max(leavingAge, 50)}
+                min={Math.max(
+                  leavingAge,
+                  50,
+                )}
                 max={statePensionAge}
                 value={workOptionalAge}
                 onChange={(event) =>
                   setWorkOptionalAge(
-                    Number(event.target.value),
+                    Number(
+                      event.target.value,
+                    ),
                   )
                 }
               />
 
               <div className="optional-age-range">
-                <span>{Math.max(leavingAge, 50)}</span>
-                <span>{statePensionAge}</span>
+                <span>
+                  {Math.max(
+                    leavingAge,
+                    50,
+                  )}
+                </span>
+
+                <span>
+                  {statePensionAge}
+                </span>
               </div>
 
               <div className="builder-summary__divider" />
 
               <span className="builder-summary__label">
-                Estimated income if work stopped at{" "}
-                {workOptionalAge}
+                Estimated income if work
+                stopped at {workOptionalAge}
               </span>
 
               <strong className="builder-summary__income">
                 {formatMoney(
-                  retirementIncomeAtOptional,
+                  totalAtOptional,
                 )}
 
                 <small>/yr</small>
@@ -871,7 +1521,7 @@ function IncomeStackBuilderView({ pension, onBack }) {
               <span className="builder-summary__monthly">
                 About{" "}
                 {formatMoney(
-                  retirementIncomeAtOptional / 12,
+                  totalAtOptional / 12,
                 )}{" "}
                 per month before tax
               </span>
@@ -885,28 +1535,40 @@ function IncomeStackBuilderView({ pension, onBack }) {
 
               <div className="builder-summary__breakdown">
                 <div>
-                  <span>Armed Forces pension</span>
+                  <span>
+                    Armed Forces pension
+                  </span>
 
                   <strong>
-                    {formatMoney(pensionAtOptional)}
+                    {formatMoney(
+                      afPensionAtOptional,
+                    )}
                   </strong>
                 </div>
 
                 <div>
                   <span>
-                    Workplace pension drawdown
+                    Workplace pension
                   </span>
 
                   <strong>
-                    {formatMoney(workplaceIncome)}
+                    {pensionAvailableAtOptional
+                      ? formatMoney(
+                          workplaceIncomeAtOptional,
+                        )
+                      : "£0"}
                   </strong>
                 </div>
 
                 <div>
-                  <span>Investment drawdown</span>
+                  <span>
+                    Investments
+                  </span>
 
                   <strong>
-                    {formatMoney(investmentIncome)}
+                    {formatMoney(
+                      investmentIncomeAtOptional,
+                    )}
                   </strong>
                 </div>
               </div>
@@ -914,13 +1576,20 @@ function IncomeStackBuilderView({ pension, onBack }) {
           </aside>
         </div>
 
+        {/* =================================================
+            INCOME TIMELINE
+        ================================================= */}
+
         <section className="income-picture">
           <div className="builder-section-heading">
             <p className="builder-eyebrow">
               Your Income Stack
             </p>
 
-            <h2>One future. Multiple income sources.</h2>
+            <h2>
+              One future. Multiple income
+              sources.
+            </h2>
 
             <p>
               All figures below are shown in{" "}
@@ -934,118 +1603,221 @@ function IncomeStackBuilderView({ pension, onBack }) {
           </div>
 
           <div className="income-picture__timeline">
+            {/* LEAVING */}
+
             <article className="income-stage">
               <div className="income-stage__age">
                 <span>Age</span>
-                <strong>{leavingAge}</strong>
+
+                <strong>
+                  {leavingAge}
+                </strong>
               </div>
 
               <div className="income-stage__content">
-                <p>Leave the Armed Forces</p>
+                <p>
+                  Leave the Armed Forces
+                </p>
 
                 <h3>
-                  {formatMoney(totalAtLeaving)}
-                  <small>/yr gross income</small>
+                  {formatMoney(
+                    totalAtLeaving,
+                  )}
+
+                  <small>
+                    /yr gross income
+                  </small>
                 </h3>
 
                 <div className="income-stage__sources">
                   <div>
-                    <span>Future salary</span>
+                    <span>
+                      Future salary
+                    </span>
+
                     <strong>
-                      {formatMoney(salaryAtLeaving)}
+                      {formatMoney(
+                        salaryAtLeavingDisplay,
+                      )}
                     </strong>
                   </div>
 
                   <div>
-                    <span>Armed Forces pension</span>
+                    <span>
+                      Armed Forces pension
+                    </span>
+
                     <strong>
-                      {formatMoney(pensionAtLeaving)}
+                      {formatMoney(
+                        afPensionAtLeaving,
+                      )}
                     </strong>
                   </div>
                 </div>
               </div>
             </article>
+
+            {/* OPTIONAL */}
 
             <article className="income-stage income-stage--focus">
               <div className="income-stage__age">
                 <span>Age</span>
-                <strong>{workOptionalAge}</strong>
+
+                <strong>
+                  {workOptionalAge}
+                </strong>
               </div>
 
               <div className="income-stage__content">
-                <p>Work becomes optional</p>
+                <p>
+                  Work becomes optional
+                </p>
 
                 <h3>
                   {formatMoney(
-                    retirementIncomeAtOptional,
+                    totalAtOptional,
                   )}
-                  <small>/yr without salary</small>
+
+                  <small>
+                    /yr without salary
+                  </small>
                 </h3>
 
                 <div className="income-stage__sources">
                   <div>
-                    <span>Armed Forces pension</span>
+                    <span>
+                      Armed Forces pension
+                    </span>
+
                     <strong>
-                      {formatMoney(pensionAtOptional)}
+                      {formatMoney(
+                        afPensionAtOptional,
+                      )}
                     </strong>
                   </div>
 
                   <div>
-                    <span>Workplace pension</span>
+                    <span>
+                      Workplace pension
+                    </span>
+
                     <strong>
-                      {formatMoney(workplaceIncome)}
+                      {pensionAvailableAtOptional
+                        ? formatMoney(
+                            workplaceIncomeAtOptional,
+                          )
+                        : "Not accessible yet"}
                     </strong>
                   </div>
 
                   <div>
-                    <span>Investments</span>
+                    <span>
+                      Investments
+                    </span>
+
                     <strong>
-                      {formatMoney(investmentIncome)}
+                      {formatMoney(
+                        investmentIncomeAtOptional,
+                      )}
                     </strong>
                   </div>
                 </div>
               </div>
             </article>
 
+            {/* STATE PENSION */}
+
             <article className="income-stage">
               <div className="income-stage__age">
                 <span>Age</span>
-                <strong>{statePensionStartAge}</strong>
+
+                <strong>
+                  {statePensionStartAge}
+                </strong>
               </div>
 
               <div className="income-stage__content">
-                <p>State Pension stage</p>
+                <p>
+                  State Pension stage
+                </p>
 
                 <h3>
-                  {formatMoney(totalAtStateAge)}
-                  <small>/yr estimated income</small>
+                  {formatMoney(
+                    totalAtStateAge,
+                  )}
+
+                  <small>
+                    /yr estimated income
+                  </small>
                 </h3>
 
                 <div className="income-stage__sources">
                   <div>
-                    <span>Armed Forces pension</span>
+                    <span>
+                      Armed Forces pension
+                    </span>
+
                     <strong>
-                      {formatMoney(pensionAtStateAge)}
+                      {formatMoney(
+                        afPensionAtStateAge,
+                      )}
                     </strong>
                   </div>
 
                   <div>
-                    <span>Workplace pension</span>
+                    <span>
+                      Workplace pension
+                    </span>
+
                     <strong>
-                      {formatMoney(workplaceIncome)}
+                      {formatMoney(
+                        workplaceIncomeAtStateAge,
+                      )}
                     </strong>
                   </div>
 
                   <div>
-                    <span>Investments</span>
+                    <span>
+                      Workplace pension pot
+                    </span>
+
                     <strong>
-                      {formatMoney(investmentIncome)}
+                      {formatMoney(
+                        workplacePotAtStateAge,
+                      )}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>
+                      Investment income
+                    </span>
+
+                    <strong>
+                      {formatMoney(
+                        investmentIncomeAtStateAge,
+                      )}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>
+                      Investments remaining
+                    </span>
+
+                    <strong>
+                      {formatMoney(
+                        investmentPotAtStateAge,
+                      )}
                     </strong>
                   </div>
 
                   {statePensionEnabled && (
                     <div>
-                      <span>State Pension</span>
+                      <span>
+                        State Pension
+                      </span>
+
                       <strong>
                         {formatMoney(
                           statePensionAtStateAge,
@@ -1059,17 +1831,29 @@ function IncomeStackBuilderView({ pension, onBack }) {
           </div>
         </section>
 
+        {/* =================================================
+            DISCLAIMER
+        ================================================= */}
+
         <aside className="builder-disclaimer">
-          <strong>About this projection</strong>
+          <strong>
+            About this projection
+          </strong>
 
           <p>
-            Armed Forces pension figures originate from the selected
-            official forecast. Future-pound pension amounts are Income
-            Stack illustrations using your CPI assumption. Workplace
-            pension and investment projections use the return and
-            drawdown assumptions you enter. These illustrations are not
-            guaranteed and do not yet model tax, charges, market
-            volatility or individual circumstances.
+            Armed Forces pension figures originate
+            from the selected official forecast.
+            Future-pound AFPS amounts are Income
+            Stack illustrations using your CPI
+            assumption. Workplace pension
+            contributions rise with the salary
+            growth assumption you enter. Pension
+            and investment pots remain invested
+            after drawdown begins and are modelled
+            using a simple percentage-of-pot
+            withdrawal each year. These figures
+            are planning illustrations, not
+            guarantees or financial advice.
           </p>
         </aside>
       </div>
