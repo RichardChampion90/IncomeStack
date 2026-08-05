@@ -4333,3 +4333,121 @@ button {
     grid-template-columns: 1fr;
   }
 }
+/* ======================================================
+   INCOME STACK — MODEL V2
+====================================================== */
+
+.builder-fields--compact-four {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.builder-access-note {
+  margin-top: 14px;
+  padding: 16px 18px;
+  border-left: 3px solid var(--colour-primary);
+  border-radius: 12px;
+  background: #f3f1e9;
+}
+
+.builder-access-note strong {
+  display: block;
+  color: var(--colour-primary);
+  font-size: 0.9rem;
+}
+
+.builder-access-note p {
+  margin: 6px 0 0;
+  color: #6c7067;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.builder-result-grid strong {
+  overflow-wrap: anywhere;
+}
+
+/* Keep assumption fields slightly more compact */
+
+.builder-fields--compact-four label > span {
+  min-height: 1.05rem;
+}
+
+.builder-fields--compact-four .money-input,
+.builder-fields--compact-four .suffix-input,
+.builder-fields--compact-four input {
+  min-width: 0;
+}
+
+/* State-age remaining pots are secondary information */
+
+.income-stage__sources > div {
+  min-width: 130px;
+}
+
+/* ======================================================
+   MOBILE
+====================================================== */
+
+@media (max-width: 680px) {
+  /*
+    Unlike the earlier version, keep the four pension /
+    investment assumptions in two columns on a phone.
+    It substantially reduces vertical scrolling.
+  */
+
+  .builder-fields--compact-four {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .builder-fields--compact-four label > span {
+    min-height: 34px;
+    margin-bottom: 5px;
+    font-size: 0.67rem;
+    line-height: 1.25;
+  }
+
+  .builder-fields--compact-four input,
+  .builder-fields--compact-four .money-input,
+  .builder-fields--compact-four .suffix-input {
+    height: 45px;
+  }
+
+  .builder-fields--compact-four input {
+    font-size: 0.95rem;
+  }
+
+  .builder-result-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .builder-result-grid > div {
+    padding: 14px;
+  }
+
+  .builder-result-grid span {
+    min-height: 36px;
+    font-size: 0.62rem;
+  }
+
+  .builder-result-grid strong {
+    font-size: 1.05rem;
+  }
+
+  .income-stage__sources > div {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 430px) {
+  .builder-fields--compact-four {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .builder-result-grid {
+    grid-template-columns: 1fr;
+  }
+}
