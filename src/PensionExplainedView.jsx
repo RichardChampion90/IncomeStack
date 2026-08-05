@@ -304,7 +304,7 @@ function ExpandableSection({
   );
 }
 
-function PensionExplainedView({ file, onBack }) {
+function PensionExplainedView({ file, onBack, onBuildStack}) {
   const [selectedScenarioId, setSelectedScenarioId] = useState("legacy");
   const [expandedEventId, setExpandedEventId] = useState(null);
 
