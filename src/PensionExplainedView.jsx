@@ -956,11 +956,22 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
           </p>
 
           <button
-            type="button"
-            className="button button--primary"
-          >
-            Build my income stack →
-          </button>
+  type="button"
+  className="button button--primary"
+  onClick={() =>
+    onBuildStack({
+      leavingAge: pensionForecast.member.leavingAge,
+      statePensionAge: pensionForecast.member.statePensionAge,
+      scenarioName: selectedScenario.shortLabel,
+      exitIncome: selectedScenario.summary.exitIncome,
+      exitLumpSum: selectedScenario.summary.exitLumpSum,
+      laterIncome: selectedScenario.summary.laterIncome,
+      events: selectedScenario.events,
+    })
+  }
+>
+  Build my income stack →
+</button>
         </section>
 
         <aside className="forecast-disclaimer forecast-disclaimer--compressed">
