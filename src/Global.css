@@ -4451,3 +4451,68 @@ button {
     grid-template-columns: 1fr;
   }
 }
+/* ======================================================
+   PENSION EXPLAINED — CPI TIDY-UP
+====================================================== */
+
+.pension-inflation-explainer {
+  margin-bottom: 22px;
+  padding: 18px;
+  border-radius: 15px;
+  background: #f3f1e9;
+}
+
+.pension-inflation-explainer strong {
+  display: block;
+  color: var(--colour-text);
+  font-size: 0.95rem;
+}
+
+.pension-inflation-explainer p {
+  margin: 7px 0 0;
+  color: #686a63;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.pension-inflation-example > div p {
+  margin: 5px 0 0;
+  color: #7b8075;
+  font-size: 0.78rem;
+}
+
+.pension-inflation-comparison {
+  margin: 18px 0 0;
+  color: #62675b;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.pension-inflation-comparison strong {
+  color: var(--colour-text);
+}
+
+.pension-inflation-why {
+  margin-top: 18px;
+  padding: 18px;
+  border-left: 3px solid var(--colour-primary);
+  border-radius: 12px;
+  background: #edf0e7;
+}
+
+.pension-inflation-why span {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--colour-primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pension-inflation-why p {
+  margin: 0;
+  color: #62675b;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
