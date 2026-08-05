@@ -48,17 +48,15 @@ const pensionForecast = {
           annualIncome: 9482,
           lumpSum: 59054,
         },
-
         {
           id: "age55",
           age: 55,
           badge: "Income change",
           title: "Your EDP increases",
           description:
-            "The annual Early Departure Payment shown in your forecast increases at age 55.",
+            "Your Early Departure Payment is uplifted at age 55. This reflects the index-linking treatment that applies to the payment after leaving service.",
           annualIncome: 12471,
         },
-
         {
           id: "age65",
           age: 65,
@@ -69,7 +67,6 @@ const pensionForecast = {
           annualIncome: 15460,
           lumpSum: 35871,
         },
-
         {
           id: "spa",
           age: 68,
@@ -88,14 +85,12 @@ const pensionForecast = {
           description:
             "Income paid after leaving service before all deferred pension benefits are in payment.",
         },
-
         {
           name: "Deferred pension",
           scheme: "AFPS 05",
           description:
             "Your legacy AFPS 05 pension becomes payable later in your pension journey.",
         },
-
         {
           name: "Deferred pension",
           scheme: "AFPS 15",
@@ -114,7 +109,6 @@ const pensionForecast = {
             pension: 22261,
             lumpSum: 35871,
           },
-
           {
             id: "maximum",
             label: "Maximum commutation",
@@ -164,17 +158,15 @@ const pensionForecast = {
           annualIncome: 9027,
           lumpSum: 57900,
         },
-
         {
           id: "age55",
           age: 55,
           badge: "Income change",
           title: "Your EDP increases",
           description:
-            "The annual Early Departure Payment shown in this Remedy outcome increases at age 55.",
+            "Your Early Departure Payment is uplifted at age 55. This reflects the index-linking treatment that applies to the payment after leaving service.",
           annualIncome: 10514,
         },
-
         {
           id: "age65",
           age: 65,
@@ -185,7 +177,6 @@ const pensionForecast = {
           annualIncome: 12001,
           lumpSum: 17844,
         },
-
         {
           id: "spa",
           age: 68,
@@ -204,14 +195,12 @@ const pensionForecast = {
           description:
             "Income paid after leaving service before all pension benefits are in payment.",
         },
-
         {
           name: "Legacy pension",
           scheme: "AFPS 05",
           description:
             "A smaller legacy pension element remains within this Remedy outcome.",
         },
-
         {
           name: "Deferred pension",
           scheme: "AFPS 15",
@@ -230,7 +219,6 @@ const pensionForecast = {
             pension: 23750,
             lumpSum: 17844,
           },
-
           {
             id: "maximum",
             label: "Maximum commutation",
@@ -270,6 +258,10 @@ function formatYears(value) {
     : `${value.toFixed(1)} years`;
 }
 
+function inflateMoney(value, rate, years) {
+  return value * Math.pow(1 + rate / 100, years);
+}
+
 function ExpandableSection({
   eyebrow,
   title,
@@ -304,23 +296,64 @@ function ExpandableSection({
   );
 }
 
-function PensionExplainedView({ file, onBack, onBuildStack}) {
-  const [selectedScenarioId, setSelectedScenarioId] = useState("legacy");
-  const [expandedEventId, setExpandedEventId] = useState(null);
+function PensionExplainedView({
+  file,
+  onBack,
+  onBuildStack,
+}) {
+  const [selectedScenarioId, setSelectedScenarioId] =
+    useState("legacy");
 
-  const [remedyInfoOpen, setRemedyInfoOpen] = useState(false);
-  const [commutationOpen, setCommutationOpen] = useState(false);
-  const [earlyAccessOpen, setEarlyAccessOpen] = useState(false);
-  const [breakdownOpen, setBreakdownOpen] = useState(false);
-  const [comparisonOpen, setComparisonOpen] = useState(false);
+  const [expandedEventId, setExpandedEventId] =
+    useState(null);
+
+  const [remedyInfoOpen, setRemedyInfoOpen] =
+    useState(false);
+
+  const [commutationOpen, setCommutationOpen] =
+    useState(false);
+
+  const [earlyAccessOpen, setEarlyAccessOpen] =
+    useState(false);
+
+  const [inflationOpen, setInflationOpen] =
+    useState(false);
+
+  const [breakdownOpen, setBreakdownOpen] =
+    useState(false);
+
+  const [comparisonOpen, setComparisonOpen] =
+    useState(false);
+
+  const [illustrativeCpi, setIllustrativeCpi] =
+    useState(2.5);
 
   const selectedScenario = useMemo(() => {
     return (
       pensionForecast.scenarios.find(
-        (scenario) => scenario.id === selectedScenarioId,
+        (scenario) =>
+          scenario.id === selectedScenarioId,
       ) ?? pensionForecast.scenarios[0]
     );
   }, [selectedScenarioId]);
+
+  const age55Event =
+    selectedScenario.events.find(
+      (event) => event.age === 55,
+    );
+
+  const age55OfficialIncome =
+    age55Event?.annualIncome || 0;
+
+  const yearsTo55 =
+    55 - pensionForecast.member.leavingAge;
+
+  const age55IllustrativeFutureIncome =
+    inflateMoney(
+      age55OfficialIncome,
+      illustrativeCpi,
+      yearsTo55,
+    );
 
   return (
     <main className="explained-view explained-view--compressed">
@@ -334,7 +367,10 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
         </button>
 
         <section className="pension-hero pension-hero--compressed">
-          <div className="stack-mark" aria-hidden="true">
+          <div
+            className="stack-mark"
+            aria-hidden="true"
+          >
             <span />
             <span />
             <span />
@@ -344,11 +380,13 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
             Your pension explained
           </p>
 
-          <h1>Here’s what your forecast means.</h1>
+          <h1>
+            Here’s what your forecast means.
+          </h1>
 
           <p className="explained-view__intro">
-            Your key payments, milestones and choices — without the
-            pension jargon.
+            Your key payments, milestones and choices —
+            without the pension jargon.
           </p>
 
           <div className="forecast-confirmation forecast-confirmation--compact">
@@ -357,10 +395,13 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
             </div>
 
             <div>
-              <span>Forecast read successfully</span>
+              <span>
+                Forecast read successfully
+              </span>
 
               <strong>
-                {file?.name || pensionForecast.source.label}
+                {file?.name ||
+                  pensionForecast.source.label}
               </strong>
             </div>
           </div>
@@ -423,39 +464,50 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
               role="radiogroup"
               aria-label="Choose a Pension Remedy outcome"
             >
-              {pensionForecast.scenarios.map((scenario) => {
-                const selected =
-                  scenario.id === selectedScenarioId;
+              {pensionForecast.scenarios.map(
+                (scenario) => {
+                  const selected =
+                    scenario.id ===
+                    selectedScenarioId;
 
-                return (
-                  <button
-                    key={scenario.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    className={`remedy-tab ${
-                      selected
-                        ? "remedy-tab--selected"
-                        : ""
-                    }`}
-                    onClick={() => {
-                      setSelectedScenarioId(scenario.id);
-                      setExpandedEventId(null);
-                    }}
-                  >
-                    <span>{scenario.tabLabel}</span>
+                  return (
+                    <button
+                      key={scenario.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      className={`remedy-tab ${
+                        selected
+                          ? "remedy-tab--selected"
+                          : ""
+                      }`}
+                      onClick={() => {
+                        setSelectedScenarioId(
+                          scenario.id,
+                        );
+                        setExpandedEventId(null);
+                      }}
+                    >
+                      <span>
+                        {scenario.tabLabel}
+                      </span>
 
-                    {selected && <strong>✓</strong>}
-                  </button>
-                );
-              })}
+                      {selected && (
+                        <strong>✓</strong>
+                      )}
+                    </button>
+                  );
+                },
+              )}
             </div>
 
             <button
               type="button"
               className="inline-info-button"
               onClick={() =>
-                setRemedyInfoOpen((value) => !value)
+                setRemedyInfoOpen(
+                  (value) => !value,
+                )
               }
             >
               {remedyInfoOpen
@@ -466,7 +518,10 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
             {remedyInfoOpen && (
               <div className="inline-info-panel">
                 <p>
-                  {pensionForecast.remedy.explanation}
+                  {
+                    pensionForecast.remedy
+                      .explanation
+                  }
                 </p>
 
                 <p>
@@ -492,11 +547,14 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
 
           <div className="headline-values headline-values--compact">
             <article className="headline-card headline-card--primary">
-              <span>Income when you leave</span>
+              <span>
+                Income when you leave
+              </span>
 
               <strong>
                 {formatMoney(
-                  selectedScenario.summary.exitIncome,
+                  selectedScenario.summary
+                    .exitIncome,
                 )}
               </strong>
 
@@ -504,38 +562,50 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
             </article>
 
             <article className="headline-card">
-              <span>Lump sum at exit</span>
+              <span>
+                Lump sum at exit
+              </span>
 
               <strong>
                 {formatMoney(
-                  selectedScenario.summary.exitLumpSum,
+                  selectedScenario.summary
+                    .exitLumpSum,
                 )}
               </strong>
             </article>
 
             <article className="headline-card">
-              <span>Later-life income</span>
+              <span>
+                Later-life income
+              </span>
 
               <strong>
                 {formatMoney(
-                  selectedScenario.summary.laterIncome,
+                  selectedScenario.summary
+                    .laterIncome,
                 )}
               </strong>
 
               <p>
                 per year at age{" "}
-                {pensionForecast.member.statePensionAge}
+                {
+                  pensionForecast.member
+                    .statePensionAge
+                }
               </p>
             </article>
           </div>
 
           <div className="outcome-meaning">
-            <strong>What this means</strong>
+            <strong>
+              What this means
+            </strong>
 
             <p>
-              You receive an income immediately after leaving
-              service, and your Armed Forces pension then
-              increases as additional benefits become payable
+              You receive an income immediately
+              after leaving service, and your Armed
+              Forces pension then increases as
+              additional benefits become payable
               later.
             </p>
           </div>
@@ -549,23 +619,29 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
           <p>
             Leave service at age{" "}
             <strong>
-              {pensionForecast.member.leavingAge}
+              {
+                pensionForecast.member
+                  .leavingAge
+              }
             </strong>{" "}
             with{" "}
             <strong>
               {formatMoney(
-                selectedScenario.summary.exitLumpSum,
+                selectedScenario.summary
+                  .exitLumpSum,
               )}
             </strong>{" "}
             upfront and{" "}
             <strong>
               {formatMoney(
-                selectedScenario.summary.exitIncome,
+                selectedScenario.summary
+                  .exitIncome,
               )}{" "}
               a year
             </strong>
-            , with your Armed Forces pension increasing as
-            additional benefits become payable later.
+            , with your Armed Forces pension
+            increasing as additional benefits
+            become payable later.
           </p>
         </section>
 
@@ -575,7 +651,9 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
               Your pension journey
             </p>
 
-            <h2>What happens, and when</h2>
+            <h2>
+              What happens, and when
+            </h2>
           </div>
 
           <div className="compact-timeline">
@@ -595,7 +673,8 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
                       </div>
 
                       {index <
-                        selectedScenario.events.length -
+                        selectedScenario.events
+                          .length -
                           1 && (
                         <div className="compact-timeline__line" />
                       )}
@@ -606,12 +685,16 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
                       className="compact-timeline__event"
                       onClick={() =>
                         setExpandedEventId(
-                          isExpanded ? null : event.id,
+                          isExpanded
+                            ? null
+                            : event.id,
                         )
                       }
                     >
                       <div className="compact-timeline__main">
-                        <span>{event.badge}</span>
+                        <span>
+                          {event.badge}
+                        </span>
 
                         <strong>
                           {event.title}
@@ -639,14 +722,18 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
                       </div>
 
                       <span className="compact-timeline__expand">
-                        {isExpanded ? "−" : "+"}
+                        {isExpanded
+                          ? "−"
+                          : "+"}
                       </span>
                     </button>
 
                     {isExpanded && (
                       <div className="compact-timeline__detail">
                         <p>
-                          {event.description}
+                          {
+                            event.description
+                          }
                         </p>
                       </div>
                     )}
@@ -673,13 +760,15 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
             title="Taking a larger lump sum"
             open={commutationOpen}
             onToggle={() =>
-              setCommutationOpen((value) => !value)
+              setCommutationOpen(
+                (value) => !value,
+              )
             }
           >
             <p className="accordion-intro">
-              Your forecast shows that you may be able to
-              exchange some annual pension for a larger lump
-              sum.
+              Your forecast shows that you may be
+              able to exchange some annual pension
+              for a larger lump sum.
             </p>
 
             <div className="commutation-options commutation-options--compressed">
@@ -699,7 +788,9 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
 
                     <div className="commutation-pair">
                       <div>
-                        <span>Annual pension</span>
+                        <span>
+                          Annual pension
+                        </span>
 
                         <strong>
                           {formatMoney(
@@ -709,7 +800,9 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
                       </div>
 
                       <div>
-                        <span>Lump sum</span>
+                        <span>
+                          Lump sum
+                        </span>
 
                         <strong>
                           {formatMoney(
@@ -729,29 +822,36 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
               </p>
 
               <h3>
-                More upfront, less pension each year.
+                More upfront, less pension each
+                year.
               </h3>
 
               <div className="tradeoff-grid">
                 <div>
-                  <span>Extra upfront</span>
+                  <span>
+                    Extra upfront
+                  </span>
 
                   <strong>
                     +
                     {formatMoney(
-                      selectedScenario.commutation.tradeOff
+                      selectedScenario
+                        .commutation.tradeOff
                         .extraLumpSum,
                     )}
                   </strong>
                 </div>
 
                 <div>
-                  <span>Pension given up</span>
+                  <span>
+                    Pension given up
+                  </span>
 
                   <strong>
                     −
                     {formatMoney(
-                      selectedScenario.commutation.tradeOff
+                      selectedScenario
+                        .commutation.tradeOff
                         .annualPensionGivenUp,
                     )}
                     /yr
@@ -759,11 +859,14 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
                 </div>
 
                 <div>
-                  <span>Simple crossover</span>
+                  <span>
+                    Simple crossover
+                  </span>
 
                   <strong>
                     {formatYears(
-                      selectedScenario.commutation.tradeOff
+                      selectedScenario
+                        .commutation.tradeOff
                         .simpleBreakEvenYears,
                     )}
                   </strong>
@@ -771,10 +874,12 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
               </div>
 
               <p className="tradeoff-card__note">
-                This is a simple comparison of the figures in
-                your forecast. It does not account for tax,
-                pension increases, investment returns,
-                longevity or personal circumstances.
+                This is a simple comparison of the
+                figures in your forecast. It does
+                not account for tax, pension
+                increases, investment returns,
+                longevity or personal
+                circumstances.
               </p>
             </div>
           </ExpandableSection>
@@ -784,7 +889,9 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
             title="Taking pension earlier"
             open={earlyAccessOpen}
             onToggle={() =>
-              setEarlyAccessOpen((value) => !value)
+              setEarlyAccessOpen(
+                (value) => !value,
+              )
             }
           >
             <div className="simple-option-panel">
@@ -795,7 +902,8 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
 
                 <strong>
                   {
-                    selectedScenario.earlyAccess
+                    selectedScenario
+                      .earlyAccess
                       .minimumAge
                   }
                 </strong>
@@ -811,11 +919,92 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
           </ExpandableSection>
 
           <ExpandableSection
+            eyebrow="Inflation"
+            title="How CPI could affect your pension"
+            open={inflationOpen}
+            onToggle={() =>
+              setInflationOpen(
+                (value) => !value,
+              )
+            }
+          >
+            <p className="accordion-intro">
+              The figures above are the official
+              values shown in your forecast. This
+              illustration shows how one of those
+              figures could look in future pounds
+              if CPI averaged the rate below.
+            </p>
+
+            <label className="pension-cpi-control">
+              <span>
+                Illustrative CPI assumption
+              </span>
+
+              <div className="suffix-input">
+                <input
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  value={illustrativeCpi}
+                  onChange={(event) =>
+                    setIllustrativeCpi(
+                      Number(
+                        event.target.value,
+                      ),
+                    )
+                  }
+                />
+
+                <span>%</span>
+              </div>
+            </label>
+
+            <div className="pension-inflation-example">
+              <div>
+                <span>
+                  Official age-55 figure
+                </span>
+
+                <strong>
+                  {formatMoney(
+                    age55OfficialIncome,
+                  )}
+                  /yr
+                </strong>
+              </div>
+
+              <div>
+                <span>
+                  Illustrative future value
+                </span>
+
+                <strong>
+                  {formatMoney(
+                    age55IllustrativeFutureIncome,
+                  )}
+                  /yr
+                </strong>
+              </div>
+            </div>
+
+            <p className="pension-inflation-note">
+              This is an Income Stack illustration
+              using your chosen CPI assumption. It
+              does not replace the figures in your
+              official forecast.
+            </p>
+          </ExpandableSection>
+
+          <ExpandableSection
             eyebrow="Scheme breakdown"
             title="Where your pension comes from"
             open={breakdownOpen}
             onToggle={() =>
-              setBreakdownOpen((value) => !value)
+              setBreakdownOpen(
+                (value) => !value,
+              )
             }
           >
             <div className="scheme-breakdown scheme-breakdown--compressed">
@@ -846,7 +1035,9 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
             title="Compare both outcomes"
             open={comparisonOpen}
             onToggle={() =>
-              setComparisonOpen((value) => !value)
+              setComparisonOpen(
+                (value) => !value,
+              )
             }
           >
             <div className="comparison-table-wrapper">
@@ -864,11 +1055,9 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
                     <th>
                       Income when leaving
                     </th>
-
                     <td>
                       {formatMoney(9482)}
                     </td>
-
                     <td>
                       {formatMoney(9027)}
                     </td>
@@ -878,11 +1067,9 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
                     <th>
                       Lump sum at exit
                     </th>
-
                     <td>
                       {formatMoney(59054)}
                     </td>
-
                     <td>
                       {formatMoney(57900)}
                     </td>
@@ -892,11 +1079,9 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
                     <th>
                       Income at 55
                     </th>
-
                     <td>
                       {formatMoney(12471)}
                     </td>
-
                     <td>
                       {formatMoney(10514)}
                     </td>
@@ -906,11 +1091,9 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
                     <th>
                       Income at 65
                     </th>
-
                     <td>
                       {formatMoney(15460)}
                     </td>
-
                     <td>
                       {formatMoney(12001)}
                     </td>
@@ -920,11 +1103,9 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
                     <th>
                       Income at 68
                     </th>
-
                     <td>
                       {formatMoney(22261)}
                     </td>
-
                     <td>
                       {formatMoney(23750)}
                     </td>
@@ -945,33 +1126,52 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
           </h2>
 
           <p className="next-step-section__lead">
-            Now see what life after the Armed Forces could
-            actually look like.
+            Now see what life after the Armed
+            Forces could actually look like.
           </p>
 
           <p>
-            Add your future salary, workplace pension,
-            savings, investments and State Pension to build
-            your complete income picture.
+            Add your future salary, workplace
+            pension, savings, investments and
+            State Pension to build your complete
+            income picture.
           </p>
 
           <button
-  type="button"
-  className="button button--primary"
-  onClick={() =>
-    onBuildStack({
-      leavingAge: pensionForecast.member.leavingAge,
-      statePensionAge: pensionForecast.member.statePensionAge,
-      scenarioName: selectedScenario.shortLabel,
-      exitIncome: selectedScenario.summary.exitIncome,
-      exitLumpSum: selectedScenario.summary.exitLumpSum,
-      laterIncome: selectedScenario.summary.laterIncome,
-      events: selectedScenario.events,
-    })
-  }
->
-  Build my income stack →
-</button>
+            type="button"
+            className="button button--primary"
+            onClick={() =>
+              onBuildStack?.({
+                leavingAge:
+                  pensionForecast.member
+                    .leavingAge,
+
+                statePensionAge:
+                  pensionForecast.member
+                    .statePensionAge,
+
+                scenarioName:
+                  selectedScenario.shortLabel,
+
+                exitIncome:
+                  selectedScenario.summary
+                    .exitIncome,
+
+                exitLumpSum:
+                  selectedScenario.summary
+                    .exitLumpSum,
+
+                laterIncome:
+                  selectedScenario.summary
+                    .laterIncome,
+
+                events:
+                  selectedScenario.events,
+              })
+            }
+          >
+            Build my income stack →
+          </button>
         </section>
 
         <aside className="forecast-disclaimer forecast-disclaimer--compressed">
@@ -980,10 +1180,12 @@ function PensionExplainedView({ file, onBack, onBuildStack}) {
           </strong>
 
           <p>
-            Income Stack is displaying and explaining figures
-            from your uploaded Armed Forces pension forecast.
-            It has not independently calculated your pension
-            or recommended which option you should choose.
+            Income Stack is displaying and
+            explaining figures from your uploaded
+            Armed Forces pension forecast. It has
+            not independently calculated your
+            pension or recommended which option you
+            should choose.
           </p>
         </aside>
       </div>
