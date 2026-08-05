@@ -4502,12 +4502,13 @@ button {
 
 .pension-inflation-why span {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
   color: var(--colour-primary);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 1.02rem;
+  font-weight: 750;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  text-transform: none;
 }
 
 .pension-inflation-why p {
