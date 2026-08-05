@@ -919,83 +919,113 @@ function PensionExplainedView({
           </ExpandableSection>
 
           <ExpandableSection
-            eyebrow="Inflation"
-            title="How CPI could affect your pension"
-            open={inflationOpen}
-            onToggle={() =>
-              setInflationOpen(
-                (value) => !value,
-              )
-            }
-          >
-            <p className="accordion-intro">
-              The figures above are the official
-              values shown in your forecast. This
-              illustration shows how one of those
-              figures could look in future pounds
-              if CPI averaged the rate below.
-            </p>
+  eyebrow="Inflation"
+  title="How CPI could affect your pension"
+  open={inflationOpen}
+  onToggle={() =>
+    setInflationOpen((value) => !value)
+  }
+>
+  <p className="accordion-intro">
+    Your forecast shows pension figures in today’s money.
+    That means they are expressed in current purchasing power,
+    rather than the number of pounds you may actually receive
+    in the future.
+  </p>
 
-            <label className="pension-cpi-control">
-              <span>
-                Illustrative CPI assumption
-              </span>
+  <div className="pension-inflation-explainer">
+    <strong>What happens to your EDP?</strong>
 
-              <div className="suffix-input">
-                <input
-                  type="number"
-                  min="0"
-                  max="10"
-                  step="0.1"
-                  value={illustrativeCpi}
-                  onChange={(event) =>
-                    setIllustrativeCpi(
-                      Number(
-                        event.target.value,
-                      ),
-                    )
-                  }
-                />
+    <p>
+      Your Early Departure Payment is normally paid at its
+      original rate until age 55. At age 55, accumulated CPI
+      increases since leaving service are applied. It then
+      normally increases annually thereafter.
+    </p>
+  </div>
 
-                <span>%</span>
-              </div>
-            </label>
+  <label className="pension-cpi-control">
+    <span>Illustrative CPI assumption</span>
 
-            <div className="pension-inflation-example">
-              <div>
-                <span>
-                  Official age-55 figure
-                </span>
+    <div className="suffix-input">
+      <input
+        type="number"
+        min="0"
+        max="10"
+        step="0.1"
+        value={illustrativeCpi}
+        onChange={(event) =>
+          setIllustrativeCpi(
+            Number(event.target.value),
+          )
+        }
+      />
 
-                <strong>
-                  {formatMoney(
-                    age55OfficialIncome,
-                  )}
-                  /yr
-                </strong>
-              </div>
+      <span>%</span>
+    </div>
+  </label>
 
-              <div>
-                <span>
-                  Illustrative future value
-                </span>
+  <div className="pension-inflation-example">
+    <div>
+      <span>
+        Official forecast figure
+      </span>
 
-                <strong>
-                  {formatMoney(
-                    age55IllustrativeFutureIncome,
-                  )}
-                  /yr
-                </strong>
-              </div>
-            </div>
+      <strong>
+        {formatMoney(age55OfficialIncome)}
+        /yr
+      </strong>
 
-            <p className="pension-inflation-note">
-              This is an Income Stack illustration
-              using your chosen CPI assumption. It
-              does not replace the figures in your
-              official forecast.
-            </p>
-          </ExpandableSection>
+      <p>in today’s money</p>
+    </div>
+
+    <div>
+      <span>
+        Illustrative amount at age 55
+      </span>
+
+      <strong>
+        {formatMoney(
+          age55IllustrativeFutureIncome,
+        )}
+        /yr
+      </strong>
+
+      <p>in future pounds</p>
+    </div>
+  </div>
+
+  <p className="pension-inflation-comparison">
+    At an average CPI rate of{" "}
+    <strong>{illustrativeCpi}%</strong> over{" "}
+    <strong>{yearsTo55} years</strong>,{" "}
+    {formatMoney(age55OfficialIncome)} in today’s
+    money is equivalent to about{" "}
+    <strong>
+      {formatMoney(
+        age55IllustrativeFutureIncome,
+      )}
+    </strong>{" "}
+    at age 55.
+  </p>
+
+  <div className="pension-inflation-why">
+    <span>Why this matters</span>
+
+    <p>
+      The amount you actually see paid into your account at
+      age 55 could look materially higher in pounds, without
+      necessarily giving you more purchasing power than the
+      original forecast figure has today.
+    </p>
+  </div>
+
+  <p className="pension-inflation-note">
+    This is an Income Stack illustration using your chosen
+    CPI assumption. It does not replace your official
+    forecast or calculate your pension entitlement.
+  </p>
+</ExpandableSection>
 
           <ExpandableSection
             eyebrow="Scheme breakdown"
