@@ -2,44 +2,51 @@ function HowItWorksSection() {
   const steps = [
     {
       number: "01",
-      title: "Tell us why you’re here",
-      text: "Choose what you want to understand, compare or explore.",
+      title: "Upload your official forecast",
+      description:
+        "We turn the figures in your pension forecast into a clearer pension journey.",
     },
     {
       number: "02",
-      title: "Upload your official forecast",
-      text: "We turn the figures in your pension forecast into a clear timeline.",
+      title: "Understand what you have",
+      description:
+        "See when your pension is paid, how the different schemes fit together and what your forecast actually means.",
     },
     {
       number: "03",
-      title: "Explore your future",
-      text: "See how your pension and the choices you make today could shape your future income.",
+      title: "Build your future",
+      description:
+        "Add future earnings, workplace pensions, savings and investments to see how your income could develop.",
     },
   ];
 
   return (
-    <section
-      className="how-it-works"
-      id="how-it-works"
-      aria-labelledby="how-it-works-title"
-    >
+    <section className="how-it-works">
       <div className="how-it-works__inner">
         <div className="how-it-works__heading">
-          <p className="how-it-works__eyebrow">How it works</p>
+          <p className="how-it-works__eyebrow">
+            How it works
+          </p>
 
-          <h2 id="how-it-works-title">
+          <h2>
             From pension forecast to a clearer view of your future.
           </h2>
         </div>
 
         <div className="how-it-works__steps">
           {steps.map((step) => (
-            <article className="process-step" key={step.number}>
-              <span className="process-step__number">{step.number}</span>
+            <article
+              key={step.number}
+              className="process-step"
+            >
+              <div className="process-step__number">
+                {step.number}
+              </div>
 
               <div>
                 <h3>{step.title}</h3>
-                <p>{step.text}</p>
+
+                <p>{step.description}</p>
               </div>
             </article>
           ))}
