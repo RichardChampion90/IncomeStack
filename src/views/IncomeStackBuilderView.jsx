@@ -12,7 +12,7 @@ import {
   salaryAtAge,
   statePensionAtAge,
   totalIncome,
-} from "./lib/projectionEngine";
+} from "../lib/projectionEngine";
 
 function formatMoney(value) {
   return new Intl.NumberFormat("en-GB", {
