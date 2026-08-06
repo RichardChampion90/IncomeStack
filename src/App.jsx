@@ -1,15 +1,15 @@
 import { useCallback, useState } from "react";
 
-import Header from "./Header";
-import IntroSection from "./IntroSection";
-import BenefitsSection from "./BenefitsSection";
-import HowItWorksSection from "./HowItWorksSection";
-import FinalCTASection from "./FinalCTASection";
-import Footer from "./Footer";
-import UploadView from "./UploadView";
-import ReadingForecastView from "./ReadingForecastView";
-import PensionExplainedView from "./PensionExplainedView";
-import IncomeStackBuilderView from "./IncomeStackBuilderView";
+import Header from "./components/Header";
+import IntroSection from "./components/IntroSection";
+import BenefitsSection from "./components/BenefitsSection";
+import HowItWorksSection from "./components/HowItWorksSection";
+import FinalCTASection from "./components/FinalCTASection";
+import Footer from "./components/Footer";
+import UploadView from "./views/UploadView";
+import ReadingForecastView from "./views/ReadingForecastView";
+import PensionExplainedView from "./views/PensionExplainedView";
+import IncomeStackBuilderView from "./views/IncomeStackBuilderView";
 
 function App() {
   const [view, setView] = useState("home");
