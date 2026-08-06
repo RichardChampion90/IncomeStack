@@ -1,0 +1,834 @@
+/* ======================================================
+   INCOME STACK — BUILDER
+   Consolidated final styles
+====================================================== */
+
+/* ======================================================
+   PAGE
+====================================================== */
+
+.builder-view {
+  min-height: 100vh;
+  padding: 28px 24px 90px;
+  background: var(--colour-background);
+  color: var(--colour-text);
+}
+
+.builder-view__container {
+  width: min(100%, 1100px);
+  margin: 0 auto;
+}
+
+/* ======================================================
+   HERO
+====================================================== */
+
+.builder-hero {
+  max-width: 820px;
+  margin-top: 28px;
+}
+
+.builder-hero .stack-mark {
+  margin-bottom: 20px;
+}
+
+.builder-eyebrow {
+  margin: 0 0 11px;
+  color: #68785c;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.builder-hero h1 {
+  max-width: 800px;
+  margin: 0;
+  font-size: clamp(2.7rem, 7vw, 5rem);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.builder-hero > p:last-child {
+  max-width: 660px;
+  margin: 22px 0 0;
+  color: #686a63;
+  font-size: 1.08rem;
+  line-height: 1.65;
+}
+
+/* ======================================================
+   FOUNDATION
+====================================================== */
+
+.foundation-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 36px;
+  margin-top: 48px;
+  padding: 30px;
+  border-radius: 24px;
+  background: var(--colour-primary);
+  color: #ffffff;
+}
+
+.foundation-card .builder-eyebrow {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.foundation-card h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.8rem;
+  letter-spacing: -0.035em;
+}
+
+.foundation-card > div:first-child > p:last-child {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.foundation-card__figures {
+  display: flex;
+  gap: 36px;
+}
+
+.foundation-card__figures span {
+  display: block;
+  margin-bottom: 6px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.7rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.foundation-card__figures strong {
+  font-size: 1.65rem;
+}
+
+/* ======================================================
+   PROJECTION SETTINGS
+====================================================== */
+
+.assumptions-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 190px;
+  gap: 18px;
+  align-items: end;
+  margin-top: 26px;
+  padding: 24px;
+  border: 1px solid var(--colour-border);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.55); }
+
+.assumptions-bar h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  letter-spacing: -0.03em;
+}
+
+.assumptions-bar__note {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #73776e;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.money-mode-toggle {
+  display: flex;
+  padding: 4px;
+  border-radius: 14px;
+  background: #e7e8e1;
+}
+
+.money-mode-toggle__button {
+  min-height: 42px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #6f746b;
+  font-weight: 750;
+}
+
+.money-mode-toggle__button--active {
+  background: #ffffff;
+  color: var(--colour-primary);
+  box-shadow: 0 2px 8px rgba(35, 43, 31, 0.06); }
+
+.inflation-control > span {
+  display: block;
+  margin-bottom: 7px;
+  color: #73776e;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+/* ======================================================
+   BUILDER LAYOUT
+====================================================== */
+
+.builder-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 28px;
+  margin-top: 72px;
+  align-items: start;
+}
+
+.builder-section-heading {
+  max-width: 690px;
+  margin-bottom: 26px;
+}
+
+.builder-section-heading h2 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+}
+
+.builder-section-heading > p:last-child {
+  margin: 14px 0 0;
+  color: #686a63;
+  line-height: 1.6;
+}
+
+.builder-inputs {
+  display: grid;
+  gap: 16px;
+}
+
+/* ======================================================
+   INPUT CARDS
+====================================================== */
+
+.builder-input-card {
+  padding: 26px;
+  border: 1px solid var(--colour-border);
+  border-radius: 22px;
+  background: #ffffff;
+}
+
+.builder-input-card__number {
+  margin-bottom: 20px;
+  color: #8a8e84;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.builder-input-card__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.builder-input-card__heading h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+}
+
+.builder-input-card__heading p {
+  max-width: 530px;
+  margin: 8px 0 0;
+  color: #686a63;
+  line-height: 1.55;
+}
+
+/* ======================================================
+   FORM FIELDS
+====================================================== */
+
+.builder-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.builder-fields--compact-four {
+  grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.builder-fields label > span {
+  display: block;
+  margin-bottom: 7px;
+  color: #73776e;
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+.builder-fields--compact-four label > span {
+  min-height: 1.05rem;
+}
+
+.builder-fields input {
+  width: 100%;
+  height: 48px;
+  padding: 0 13px;
+  border: 1px solid var(--colour-border);
+  border-radius: 12px;
+  background: #faf9f5;
+  color: var(--colour-text);
+  font: inherit;
+  font-weight: 700;
+}
+
+.money-input,
+.suffix-input {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  height: 48px;
+  border: 1px solid var(--colour-border);
+  border-radius: 12px;
+  background: #faf9f5;
+}
+
+.money-input > span,
+.suffix-input > span {
+  padding: 0 12px;
+  color: #777b72;
+  font-weight: 750;
+}
+
+.money-input input,
+.suffix-input input {
+  height: 46px;
+  padding-left: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.suffix-input input {
+  padding-left: 13px;
+}
+
+.builder-fields--compact-four .money-input, .builder-fields--compact-four .suffix-input, .builder-fields--compact-four input {
+  min-width: 0;
+}
+
+/* ======================================================
+   TOGGLE
+====================================================== */
+
+.builder-toggle {
+  flex: 0 0 auto;
+  padding: 8px 11px;
+  border: 1px solid var(--colour-border);
+  border-radius: 999px;
+  background: #f5f3ed;
+  color: #777b72;
+  font-weight: 750;
+}
+
+.builder-toggle--on {
+  border-color: var(--colour-primary);
+  background: #edf0e7;
+  color: var(--colour-primary);
+}
+
+/* ======================================================
+   RESULT CARDS
+====================================================== */
+
+.builder-result-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.builder-result-grid > div {
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: #edf0e7;
+}
+
+.builder-result-grid span {
+  display: block;
+  margin-bottom: 7px;
+  color: #737a6d;
+  font-size: 0.7rem;
+  font-weight: 750;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.builder-result-grid strong {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--colour-primary);
+  font-size: 1.25rem;
+}
+
+/* ======================================================
+   PENSION ACCESS WARNING
+====================================================== */
+
+.builder-access-note {
+  margin-top: 14px;
+  padding: 16px 18px;
+  border-left: 3px solid var(--colour-primary);
+  border-radius: 12px;
+  background: #f3f1e9;
+}
+
+.builder-access-note strong {
+  display: block;
+  color: var(--colour-primary);
+  font-size: 0.9rem;
+}
+
+.builder-access-note p {
+  margin: 6px 0 0;
+  color: #6c7067;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+/* ======================================================
+   STICKY SUMMARY
+====================================================== */
+
+.builder-summary__sticky {
+  position: sticky;
+  top: 24px;
+  padding: 26px;
+  border-radius: 24px;
+  background: var(--colour-primary);
+  color: #ffffff;
+}
+
+.builder-summary .builder-eyebrow {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.builder-summary h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.45rem;
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+}
+
+.optional-age {
+  display: flex;
+  align-items: flex-end;
+  gap: 9px;
+  margin-top: 25px;
+}
+
+.optional-age strong {
+  font-size: 4rem;
+  line-height: 0.9;
+  letter-spacing: -0.07em;
+}
+
+.optional-age span {
+  padding-bottom: 5px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.optional-age-slider {
+  width: 100%;
+  margin-top: 25px;
+  accent-color: #ffffff;
+}
+
+.optional-age-range {
+  display: flex;
+  justify-content: space-between;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
+}
+
+.builder-summary__divider {
+  height: 1px;
+  margin: 24px 0;
+  background: rgba(255, 255, 255, 0.16); }
+
+.builder-summary__label {
+  display: block;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.builder-summary__income {
+  display: block;
+  margin-top: 10px;
+  font-size: 2.45rem;
+  letter-spacing: -0.055em;
+}
+
+.builder-summary__income small {
+  margin-left: 4px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.85rem;
+}
+
+.builder-summary__monthly {
+  display: block;
+  margin-top: 7px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.86rem;
+}
+
+.builder-summary__mode {
+  display: inline-flex;
+  margin-top: 12px;
+  padding: 7px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.builder-summary__breakdown {
+  display: grid;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.builder-summary__breakdown > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14); }
+
+.builder-summary__breakdown span {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.82rem;
+}
+
+/* ======================================================
+   INCOME STACK TIMELINE
+====================================================== */
+
+.income-picture {
+  margin-top: 86px;
+}
+
+.income-picture__timeline {
+  display: grid;
+  gap: 14px;
+}
+
+.income-stage {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid var(--colour-border);
+  border-radius: 22px;
+  background: #ffffff;
+}
+
+.income-stage--focus {
+  border-color: var(--colour-primary);
+  background: #edf0e7;
+}
+
+.income-stage__age {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  min-height: 110px;
+  border-radius: 17px;
+  background: #f3f1e9;
+}
+
+.income-stage--focus .income-stage__age {
+  background: var(--colour-primary);
+  color: #ffffff;
+}
+
+.income-stage__age span {
+  color: #7b7f75;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.income-stage--focus .income-stage__age span {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.income-stage__age strong {
+  font-size: 2.4rem;
+  letter-spacing: -0.055em;
+}
+
+.income-stage__content > p {
+  margin: 0;
+  color: #68785c;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.income-stage__content h3 {
+  margin: 8px 0 0;
+  font-size: 2rem;
+  letter-spacing: -0.045em;
+}
+
+.income-stage__content h3 small {
+  display: block;
+  margin-top: 4px;
+  color: #757970;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0;
+}
+
+.income-stage__sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 30px;
+  margin-top: 18px;
+  padding-top: 17px;
+  border-top: 1px solid var(--colour-border); }
+
+.income-stage__sources > div {
+  min-width: 130px;
+}
+
+.income-stage__sources span {
+  display: block;
+  margin-bottom: 4px;
+  color: #7b7f75;
+  font-size: 0.7rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.income-stage__sources strong {
+  font-size: 1.03rem;
+}
+
+/* ======================================================
+   DISCLAIMER
+====================================================== */
+
+.builder-disclaimer {
+  margin-top: 48px;
+  padding: 24px 26px;
+  border-radius: 18px;
+  background: #e8e5db;
+}
+
+.builder-disclaimer strong {
+  display: block;
+  color: var(--colour-text);
+}
+
+.builder-disclaimer p {
+  margin: 8px 0 0;
+  color: #62655e;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+/* ======================================================
+   TABLET
+====================================================== */
+
+@media (max-width: 900px) {
+  .builder-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .builder-summary__sticky {
+    position: static;
+  }
+}
+
+@media (max-width: 820px) {
+  .assumptions-bar {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .assumptions-bar__note {
+    grid-column: auto;
+  }
+
+  .money-mode-toggle {
+    width: 100%;
+  }
+
+  .money-mode-toggle__button {
+    flex: 1;
+  }
+}
+
+/* ======================================================
+   MOBILE
+====================================================== */
+
+@media (max-width: 680px) {
+  .builder-view {
+    padding: 24px 20px 60px;
+  }
+
+  .builder-hero {
+    margin-top: 20px;
+  }
+
+  .builder-hero h1 {
+    font-size: clamp(2.5rem, 11vw, 3.5rem);
+  }
+
+  .foundation-card {
+    display: grid;
+    gap: 24px;
+    margin-top: 38px;
+    padding: 24px 20px;
+  }
+
+  .foundation-card__figures {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .assumptions-bar {
+    padding: 20px;
+  }
+
+  .builder-layout {
+    margin-top: 54px;
+  }
+
+  .builder-input-card {
+    padding: 22px 18px;
+  }
+
+  .builder-input-card__heading {
+    display: grid;
+  }
+
+  .builder-fields {
+    grid-template-columns: 1fr;
+  }
+
+  /*
+    Compact workplace pension and investment controls
+    deliberately stay two columns on mobile.
+  */
+
+  .builder-fields--compact-four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .builder-fields--compact-four label > span {
+    min-height: 34px;
+    margin-bottom: 5px;
+    font-size: 0.67rem;
+    line-height: 1.25;
+  }
+
+  .builder-fields--compact-four input,
+  .builder-fields--compact-four .money-input,
+  .builder-fields--compact-four .suffix-input {
+    height: 45px;
+  }
+
+  .builder-fields--compact-four input {
+    font-size: 0.95rem;
+  }
+
+  .builder-result-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .builder-result-grid > div {
+    padding: 14px;
+  }
+
+  .builder-result-grid span {
+    min-height: 36px;
+    font-size: 0.62rem;
+  }
+
+  .builder-result-grid strong {
+    font-size: 1.05rem;
+  }
+
+  .income-picture {
+    margin-top: 64px;
+  }
+
+  .income-stage {
+    grid-template-columns: 68px minmax(0, 1fr);
+    padding: 16px;
+  }
+
+  .income-stage__age {
+    min-height: 88px;
+  }
+
+  .income-stage__age strong {
+    font-size: 1.85rem;
+  }
+
+  .income-stage__content h3 {
+    font-size: 1.6rem;
+  }
+
+  .income-stage__sources {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .income-stage__sources > div {
+    min-width: 0;
+  }
+}
+
+/* ======================================================
+   SMALL MOBILE
+====================================================== */
+
+@media (max-width: 430px) {
+  .foundation-card__figures {
+    grid-template-columns: 1fr;
+  }
+
+  .builder-fields--compact-four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .builder-result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .income-stage {
+    grid-template-columns: 58px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .income-stage__age {
+    min-height: 78px;
+  }
+
+  .income-stage__age strong {
+    font-size: 1.55rem;
+  }
+
+  .income-stage__sources {
+    grid-template-columns: 1fr;
+  }
+}
